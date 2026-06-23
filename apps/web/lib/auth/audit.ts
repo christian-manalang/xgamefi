@@ -1,4 +1,4 @@
-import { prisma } from "@xgamefi/db";
+import { prisma, Prisma } from "@xgamefi/db";
 
 const REDACT = /pass|secret|token|signature|hash|nonce/i;
 
@@ -26,7 +26,7 @@ export async function writeAudit(args: {
       entityType: args.entityType,
       entityId: args.entityId,
       ip: args.ip,
-      metadata: sanitize(args.metadata),
+      metadata: sanitize(args.metadata) as Prisma.InputJsonValue,
     },
   });
 }
