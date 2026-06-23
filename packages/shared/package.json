@@ -8,7 +8,10 @@
     "./hmac": "./src/hmac.ts",
     "./ssrf": "./src/ssrf.ts",
     "./stellar": "./src/stellar.ts",
-    "./queues": "./src/queues.ts"
+    "./queues": "./src/queues.ts",
+    "./auth": "./src/auth/index.ts",
+    "./zod/auth": "./src/zod/auth.ts",
+    "./dto/auth": "./src/dto/auth.ts"
   },
   "dependencies": {
     "@xgamefi/db": "workspace:*",
@@ -16,7 +19,9 @@
     "bignumber.js": "^9.1.2",
     "@stellar/stellar-sdk": "^15.1.0",
     "bullmq": "^5.34.0",
-    "ioredis": "^5.4.0"
+    "ioredis": "^5.4.0",
+    "jose": "^5.9.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "vitest": "^3.0.0",
