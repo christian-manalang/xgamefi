@@ -67,6 +67,31 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
 
+  apps/worker:
+    dependencies:
+      '@xgamefi/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@xgamefi/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@xgamefi/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      bullmq:
+        specifier: ^5.34.0
+        version: 5.79.1
+      ioredis:
+        specifier: ^5.4.0
+        version: 5.11.1
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.22.4
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.6(@types/node@26.0.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
+
   packages/config:
     dependencies:
       '@eslint/js':

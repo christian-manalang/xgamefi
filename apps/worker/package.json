@@ -1,0 +1,21 @@
+{
+  "name": "@xgamefi/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --env-file-if-exists=../../.env --import tsx src/index.ts"
+  },
+  "dependencies": {
+    "@xgamefi/shared": "workspace:*",
+    "@xgamefi/config": "workspace:*",
+    "@xgamefi/db": "workspace:*",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.4.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "vitest": "^3.0.0"
+  }
+}
