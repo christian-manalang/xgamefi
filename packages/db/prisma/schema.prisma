@@ -1,0 +1,417 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  STUDIO_OWNER
+  STUDIO_MEMBER
+}
+
+enum IntegrationMode {
+  API_PULL
+  WEBHOOK_PUSH
+}
+
+enum StudioStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum Currency {
+  XLM
+  USDT
+}
+
+enum ShopStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+}
+
+enum OwnershipSource {
+  PRIMARY
+  P2P
+}
+
+enum P2PListingStatus {
+  ACTIVE
+  LOCKED
+  SOLD
+  CANCELLED
+}
+
+enum P2PTradeStatus {
+  ESCROW_PENDING
+  PAID
+  ITEM_TRANSFERRED
+  COMPLETED
+  REFUNDED
+  FAILED
+}
+
+enum LedgerEntryType {
+  SALE_IN
+  PAYOUT_OUT
+  P2P_ESCROW_IN
+  P2P_PAYOUT
+  REFERRAL_REWARD
+  REFUND
+}
+
+enum ReferralStatus {
+  PENDING
+  QUALIFIED
+  REWARDED
+  EXPIRED
+}
+
+enum PromotionType {
+  PERCENT
+  FIXED
+  BUNDLE
+  FIRST_PURCHASE
+}
+
+enum WebhookEvent {
+  purchase_completed
+  purchase_pending
+  purchase_failed
+  p2p_trade_completed
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  EXHAUSTED
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  username     String   @unique
+  passwordHash String
+  role         Role
+  studioId     String?  @db.Uuid
+  studio       Studio?  @relation(fields: [studioId], references: [id])
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  sessions     Session[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Session {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Player {
+  id                  String   @id @default(uuid()) @db.Uuid
+  walletAddress       String   @unique
+  handle              String?
+  referredByPlayerId  String?  @db.Uuid
+  referredByPlayer    Player?  @relation("PlayerReferrals", fields: [referredByPlayerId], references: [id])
+  referredPlayers     Player[] @relation("PlayerReferrals")
+  firstPurchaseAt     DateTime?
+  orders              Order[]
+  ownerships          ItemOwnership[]
+  listings            P2PListing[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model AuthChallenge {
+  id            String   @id @default(uuid()) @db.Uuid
+  walletAddress String
+  nonce         String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([walletAddress])
+}
+
+model Studio {
+  id                   String          @id @default(uuid()) @db.Uuid
+  name                 String
+  slug                 String          @unique
+  description          String?
+  logoUrl              String?
+  brand                Json?
+  payoutWalletAddress  String?
+  integrationMode      IntegrationMode @default(API_PULL)
+  apiBaseUrl           String?
+  webhookUrl           String?
+  webhookSecretHash    String?
+  platformFeeBps       Int
+  status               StudioStatus    @default(PENDING)
+  users                User[]
+  apiKeys              ApiKey[]
+  items                Item[]
+  shop                 Shop?
+  orders               Order[]
+  promotions           Promotion[]
+  webhookDeliveries    WebhookDelivery[]
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model ApiKey {
+  id         String    @id @default(uuid()) @db.Uuid
+  studioId   String    @db.Uuid
+  studio     Studio    @relation(fields: [studioId], references: [id])
+  keyPrefix  String
+  hashedKey  String
+  scopes     String[]
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([studioId])
+}
+
+model Item {
+  id            String   @id @default(uuid()) @db.Uuid
+  studioId      String   @db.Uuid
+  studio        Studio   @relation(fields: [studioId], references: [id])
+  externalId    String
+  name          String
+  description   String?
+  imageUrl      String?
+  priceAmount   Decimal  @db.Decimal(38, 7)
+  priceCurrency Currency
+  stock         Int?
+  rarity        String?
+  category      String?
+  metadata      Json?
+  isActive      Boolean  @default(true)
+  syncedAt      DateTime?
+  orders        Order[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([studioId, externalId])
+  @@index([studioId])
+}
+
+model Shop {
+  id              String     @id @default(uuid()) @db.Uuid
+  studioId        String     @unique @db.Uuid
+  studio          Studio     @relation(fields: [studioId], references: [id])
+  status          ShopStatus @default(DRAFT)
+  layout          Json?
+  draftLayout     Json?
+  theme           Json?
+  featuredItemIds String[]
+  publishedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Order {
+  id                  String         @id @default(uuid()) @db.Uuid
+  studioId            String         @db.Uuid
+  studio              Studio         @relation(fields: [studioId], references: [id])
+  itemId              String         @db.Uuid
+  item                Item           @relation(fields: [itemId], references: [id])
+  playerId            String         @db.Uuid
+  player              Player         @relation(fields: [playerId], references: [id])
+  quantity            Int
+  currency            Currency
+  grossAmount         Decimal        @db.Decimal(38, 7)
+  discountAmount      Decimal        @default(0) @db.Decimal(38, 7)
+  platformFeeAmount   Decimal        @db.Decimal(38, 7)
+  netToStudioAmount   Decimal        @db.Decimal(38, 7)
+  promotionId         String?        @db.Uuid
+  referralCodeUsed    String?
+  idempotencyKey      String         @unique
+  stellarTxHash       String?        @unique
+  paymentStatus       PaymentStatus  @default(PENDING)
+  deliveryStatus      DeliveryStatus @default(PENDING)
+  paidAt              DateTime?
+  deliveredAt         DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([studioId])
+  @@index([playerId])
+}
+
+model ItemOwnership {
+  id                 String          @id @default(uuid()) @db.Uuid
+  playerId           String          @db.Uuid
+  player             Player          @relation(fields: [playerId], references: [id])
+  itemId             String          @db.Uuid
+  studioId           String          @db.Uuid
+  quantity           Int
+  source             OwnershipSource
+  lockedForListingId String?         @db.Uuid
+  acquiredAt         DateTime        @default(now())
+
+  @@index([playerId])
+  @@index([studioId])
+}
+
+model P2PListing {
+  id             String           @id @default(uuid()) @db.Uuid
+  studioId       String           @db.Uuid
+  itemId         String           @db.Uuid
+  sellerPlayerId String           @db.Uuid
+  seller         Player           @relation(fields: [sellerPlayerId], references: [id])
+  price          Decimal          @db.Decimal(38, 7)
+  currency       Currency
+  status         P2PListingStatus @default(ACTIVE)
+  lockedAt       DateTime?
+  trades         P2PTrade[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([studioId])
+}
+
+model P2PTrade {
+  id                String         @id @default(uuid()) @db.Uuid
+  listingId         String         @db.Uuid
+  listing           P2PListing     @relation(fields: [listingId], references: [id])
+  buyerPlayerId     String         @db.Uuid
+  sellerPlayerId    String         @db.Uuid
+  price             Decimal        @db.Decimal(38, 7)
+  currency          Currency
+  platformFeeAmount Decimal        @db.Decimal(38, 7)
+  netToSellerAmount Decimal        @db.Decimal(38, 7)
+  escrowTxHash      String?
+  payoutTxHash      String?
+  status            P2PTradeStatus @default(ESCROW_PENDING)
+  idempotencyKey    String         @unique
+  createdAt         DateTime       @default(now())
+  completedAt       DateTime?
+}
+
+model LedgerEntry {
+  id            String          @id @default(uuid()) @db.Uuid
+  type          LedgerEntryType
+  orderId       String?         @db.Uuid
+  tradeId       String?         @db.Uuid
+  referralId    String?         @db.Uuid
+  stellarTxHash String
+  sourceAddress String
+  destAddress   String
+  amount        Decimal         @db.Decimal(38, 7)
+  assetCode     String
+  assetIssuer   String?
+  status        String
+  createdAt     DateTime        @default(now())
+
+  @@index([orderId])
+  @@index([tradeId])
+}
+
+model Referral {
+  id                String         @id @default(uuid()) @db.Uuid
+  code              String         @unique
+  referrerPlayerId  String         @db.Uuid
+  studioId          String?        @db.Uuid
+  refereePlayerId   String?        @db.Uuid
+  status            ReferralStatus @default(PENDING)
+  qualifyingOrderId String?        @db.Uuid
+  rewardAmount      Decimal?       @db.Decimal(38, 7)
+  rewardCurrency    Currency?
+  rewardTxHash      String?
+  createdAt         DateTime       @default(now())
+  qualifiedAt       DateTime?
+  rewardedAt        DateTime?
+
+  @@index([referrerPlayerId])
+}
+
+model Promotion {
+  id               String        @id @default(uuid()) @db.Uuid
+  studioId         String        @db.Uuid
+  studio           Studio        @relation(fields: [studioId], references: [id])
+  name             String
+  type             PromotionType
+  value            Decimal       @db.Decimal(38, 7)
+  currency         Currency?
+  appliesToItemIds String[]
+  bundleConfig     Json?
+  startsAt         DateTime?
+  endsAt           DateTime?
+  usageLimit       Int?
+  usageCount       Int           @default(0)
+  isActive         Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([studioId])
+}
+
+model WebhookDelivery {
+  id             String                @id @default(uuid()) @db.Uuid
+  studioId       String                @db.Uuid
+  studio         Studio                @relation(fields: [studioId], references: [id])
+  event          WebhookEvent
+  orderId        String?               @db.Uuid
+  tradeId        String?               @db.Uuid
+  url            String
+  payload        Json
+  signature      String
+  attempt        Int                   @default(0)
+  maxAttempts    Int
+  status         WebhookDeliveryStatus @default(PENDING)
+  responseStatus Int?
+  nextAttemptAt  DateTime?
+  createdAt      DateTime              @default(now())
+  deliveredAt    DateTime?
+
+  @@index([studioId])
+}
+
+model IdempotencyKey {
+  id               String   @id @default(uuid()) @db.Uuid
+  key              String   @unique
+  scope            String
+  requestHash      String
+  responseSnapshot Json?
+  createdAt        DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorType   String
+  actorUserId String?  @db.Uuid
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+}

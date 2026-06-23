@@ -18,5 +18,8 @@
     "eslint": "^9.15.0",
     "prettier": "^3.4.0",
     "dotenv": "^16.4.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["argon2", "prisma", "@prisma/client", "@prisma/engines", "esbuild"]
   }
 }

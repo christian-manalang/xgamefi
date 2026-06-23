@@ -1,0 +1,27 @@
+{
+  "name": "@xgamefi/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "node --env-file-if-exists=../../.env --import tsx prisma/seed.ts",
+    "db:diff": "prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --shadow-database-url $SHADOW_DATABASE_URL --exit-code"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "pg": "^8.13.0",
+    "@xgamefi/config": "workspace:*"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0",
+    "tsx": "^4.19.0",
+    "argon2": "^0.41.0",
+    "@types/pg": "^8.11.0",
+    "dotenv": "^16.4.0"
+  }
+}
