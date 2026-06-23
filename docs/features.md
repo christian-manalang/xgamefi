@@ -2,6 +2,18 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Sprint 1 — Auth & Tenancy (#14–#30)
+
+Authentication and multi-tenant authorization layer.
+
+- **Shared auth primitives (#14–#18):** `@xgamefi/shared/auth` — opaque session id gen / SHA-256 hash / constant-time compare, wallet nonce + server-side Freighter (Ed25519) signature verify, CSRF helpers (same-origin check + `jose` double-submit token), rate-limit key builders + login backoff math, the canonical `Principal` type, auth Zod schemas (`@xgamefi/shared/zod/auth`) and the `MeDto` mapper (`@xgamefi/shared/dto/auth`).
+- **Web auth lib (#19–#23):** `apps/web/lib/auth` — argon2id password hash/verify, Redis client + rate-limit/login-backoff, opaque cookie sessions (Redis mirror + `Session` row + sliding 30-min idle TTL), central RBAC guards (`getPrincipal`/`requirePrincipal`/`requireRole`/`requireStudio`/`scopeToStudio`), request-level CSRF Origin/Referer guard, and a secret-stripping `AuditLog` writer. Session cookies are attached to the route `Response` (testable) with reads via `next/headers`.
+- **Schema (#27):** additive migration — `Session.playerId` (userId now nullable) for player sessions + auth lookup indexes.
+- **Auth API (#24–#26):** `POST /api/v1/auth/login` (argon2id, rate-limit, backoff, CSRF, audit, generic `INVALID_CREDENTIALS`), `POST /auth/logout` (revoke + clear cookie), `GET /auth/me`, `POST /auth/wallet/challenge` (one-time time-boxed nonce), `POST /auth/wallet/verify` (server-side Freighter verify → player session).
+- **Edge gate (#28):** `proxy.ts` coarse cookie-presence redirect for `/admin`,`/dashboard` + security headers — explicitly NOT the authoritative check (every handler re-verifies).
+- **Login UI (#29):** `/login` page + terminal-style client form (BRAND styling).
+- **Acceptance (#30):** executable gate — admin logs in to a cookie session; player signs a Freighter challenge to a player session.
+
 ## Sprint 0 — Foundations (#1–#13)
 
 Stood up the xGameFi pnpm monorepo and verified, secure base every later phase builds on.
