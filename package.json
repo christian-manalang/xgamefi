@@ -20,6 +20,6 @@
     "dotenv": "^16.4.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["argon2", "prisma", "@prisma/client", "@prisma/engines", "esbuild"]
+    "onlyBuiltDependencies": ["argon2", "prisma", "@prisma/client", "@prisma/engines", "esbuild", "sharp"]
   }
 }
