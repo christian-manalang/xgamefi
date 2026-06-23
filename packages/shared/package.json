@@ -1,0 +1,25 @@
+{
+  "name": "@xgamefi/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./money": "./src/money.ts",
+    "./hmac": "./src/hmac.ts",
+    "./ssrf": "./src/ssrf.ts",
+    "./stellar": "./src/stellar.ts",
+    "./queues": "./src/queues.ts"
+  },
+  "dependencies": {
+    "@xgamefi/db": "workspace:*",
+    "@xgamefi/config": "workspace:*",
+    "bignumber.js": "^9.1.2",
+    "@stellar/stellar-sdk": "^15.1.0",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.4.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0",
+    "@types/node": "^22.0.0"
+  }
+}
