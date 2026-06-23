@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: xgamefi
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U user -d xgamefi"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://user:pass@localhost:5432/xgamefi
+      SHADOW_DATABASE_URL: postgresql://user:pass@localhost:5432/xgamefi_shadow
+      REDIS_URL: redis://localhost:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Load test env
+        run: cp .env.test .env
+
+      - name: Create shadow database
+        run: PGPASSWORD=pass createdb -h localhost -U user xgamefi_shadow
+
+      - name: Prisma generate
+        run: pnpm db:generate
+
+      - name: Prisma migrate deploy
+        run: pnpm --filter @xgamefi/db exec prisma migrate deploy
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Prisma drift check
+        run: pnpm --filter @xgamefi/db db:diff
+
+      - name: Audit (fail on high/critical)
+        run: pnpm audit --audit-level high

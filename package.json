@@ -17,9 +17,14 @@
     "vitest": "^3.0.0",
     "eslint": "^9.15.0",
     "prettier": "^3.4.0",
-    "dotenv": "^16.4.0"
+    "dotenv": "^16.4.0",
+    "@xgamefi/config": "workspace:*"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["argon2", "prisma", "@prisma/client", "@prisma/engines", "esbuild", "sharp"]
+    "onlyBuiltDependencies": ["argon2", "prisma", "@prisma/client", "@prisma/engines", "esbuild", "sharp"],
+    "overrides": {
+      "ioredis": "5.11.1",
+      "axios": "^1.16.0"
+    }
   }
 }
