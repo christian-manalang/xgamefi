@@ -149,6 +149,8 @@ model Player {
   orders              Order[]
   ownerships          ItemOwnership[]
   listings            P2PListing[]
+  p2pTradesAsBuyer    P2PTrade[]      @relation("P2PTradeBuyer")
+  p2pTradesAsSeller   P2PTrade[]      @relation("P2PTradeSeller")
   sessions            Session[]
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -222,6 +224,8 @@ model Item {
   isActive      Boolean  @default(true)
   syncedAt      DateTime?
   orders        Order[]
+  ownerships    ItemOwnership[]
+  p2pListings   P2PListing[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -277,29 +281,34 @@ model ItemOwnership {
   playerId           String          @db.Uuid
   player             Player          @relation(fields: [playerId], references: [id])
   itemId             String          @db.Uuid
+  item               Item            @relation(fields: [itemId], references: [id])
   studioId           String          @db.Uuid
   quantity           Int
   source             OwnershipSource
   lockedForListingId String?         @db.Uuid
+  lockedForListing   P2PListing?     @relation("ListingLocks", fields: [lockedForListingId], references: [id])
   acquiredAt         DateTime        @default(now())
 
+  @@unique([playerId, itemId])
   @@index([playerId])
   @@index([studioId])
 }
 
 model P2PListing {
-  id             String           @id @default(uuid()) @db.Uuid
-  studioId       String           @db.Uuid
-  itemId         String           @db.Uuid
-  sellerPlayerId String           @db.Uuid
-  seller         Player           @relation(fields: [sellerPlayerId], references: [id])
-  price          Decimal          @db.Decimal(38, 7)
-  currency       Currency
-  status         P2PListingStatus @default(ACTIVE)
-  lockedAt       DateTime?
-  trades         P2PTrade[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id              String           @id @default(uuid()) @db.Uuid
+  studioId        String           @db.Uuid
+  itemId          String           @db.Uuid
+  item            Item             @relation(fields: [itemId], references: [id])
+  sellerPlayerId  String           @db.Uuid
+  seller          Player           @relation(fields: [sellerPlayerId], references: [id])
+  price           Decimal          @db.Decimal(38, 7)
+  currency        Currency
+  status          P2PListingStatus @default(ACTIVE)
+  lockedAt        DateTime?
+  trades          P2PTrade[]
+  lockedOwnerships ItemOwnership[] @relation("ListingLocks")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([studioId])
 }
@@ -309,7 +318,9 @@ model P2PTrade {
   listingId         String         @db.Uuid
   listing           P2PListing     @relation(fields: [listingId], references: [id])
   buyerPlayerId     String         @db.Uuid
+  buyer             Player         @relation("P2PTradeBuyer", fields: [buyerPlayerId], references: [id])
   sellerPlayerId    String         @db.Uuid
+  seller            Player         @relation("P2PTradeSeller", fields: [sellerPlayerId], references: [id])
   price             Decimal        @db.Decimal(38, 7)
   currency          Currency
   platformFeeAmount Decimal        @db.Decimal(38, 7)

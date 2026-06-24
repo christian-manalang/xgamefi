@@ -2,6 +2,23 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Sprint 6 — P2P Marketplace (#85–#96)
+
+Player-to-player marketplace on the Phase-3 money core: ownership-verified listings, escrow-pay, a settlement state machine that transfers the item and pays the seller net of fees, auto-refund on failure, and a signed `p2p.trade.completed` webhook — all ledgered.
+
+- **Schema relations (#85):** migration `20260624000000_p2p_relations` — `P2PListing.item`, `P2PTrade.buyer/seller`, `ItemOwnership.item/lockedForListing`, back-relations, and `ItemOwnership @@unique([playerId, itemId])` for `(playerId, itemId)` upserts.
+- **P2P DTOs + Zod (#86):** `@xgamefi/shared/dto/p2p` (`toP2PListingDto`/`toP2PTradeDto`, 7-dp money) and `@xgamefi/shared/zod/p2p` (`CreateListingInput`, `P2PTradeQuoteInput`, `P2PTradeSubmitInput`, `P2PListingsQuery`).
+- **Ownership verification (#87):** `@xgamefi/shared/p2p/ownership` — `refreshOwnership`/`assertOwnsItem` pull the player's inventory from the studio's game API through the SSRF guard and upsert the `ItemOwnership` row.
+- **P2P settlement core (#88):** `@xgamefi/shared/p2p/settlement` — `verifyAndAdvanceP2PTrade` (on-chain escrow verify → `P2P_ESCROW_IN` ledger → `PAID` → enqueue transfer) and `transferItemAndPayout` (HMAC-signed game transfer → seller payout → `P2P_PAYOUT` ledger → `COMPLETED`/listing `SOLD`/ownership move, or `refund` on transfer failure).
+- **Create listing (#89):** `POST /p2p/listings` — player-auth, verifies ownership, creates an `ACTIVE` listing and locks the ownership row (`apps/web/lib/p2p-queries.ts`).
+- **Public market endpoints (#90):** `GET /p2p/listings/query?slug=…` (published-shop-scoped, paginated, `ACTIVE` only) and `GET /p2p/listings/:id`.
+- **Trade quote + submit (#91):** `POST /p2p/trades/quote` (locks listing, creates `ESCROW_PENDING` trade, returns escrow address/memo/unsigned XDR) and `POST /p2p/trades/submit` (idempotent, calls `verifyAndAdvanceP2PTrade`).
+- **p2p-settlement worker (#92):** `p2pSettlementProcessor` — `transfer` phase runs `transferItemAndPayout`; verify phase polls Horizon for escrow payments matching `ESCROW_PENDING` trade memos; registered in the worker queue map.
+- **Refund job (#93):** replaced the Phase-3 stub — refunds an Order or a P2P trade buyer on-chain from the platform account, writes a `CONFIRMED` `REFUND` ledger entry, flips status to `REFUNDED` (branches on `orderId`/`tradeId` so legacy `{ orderId }` callers still work).
+- **Webhook `p2p_trade_completed` (#94):** `webhook-delivery` now resolves studio/url/secret/payload for either an order or a trade, signs and delivers; P2P exhaustion does not refund (the trade already settled).
+- **Market UI (#95):** `/s/[slug]/market` grid + `/s/[slug]/market/listing/[id]` detail with a Freighter/QR `BuyClient` island.
+- **Acceptance (#96):** `apps/web/test/acceptance/phase6-p2p.test.ts` — list → quote → escrow verify → transfer → payout, asserting `P2P_ESCROW_IN` + `P2P_PAYOUT` ledger entries, `COMPLETED` trade, `SOLD` listing, and moved ownership; plus a testnet-gated Playwright `e2e/p2p.spec.ts`.
+
 ## Sprint 5 — Growth (#75–#84)
 
 Promotions and a referral program: server-side discounting at quote time and automatic, idempotent referrer payouts on a referred player's first purchase.

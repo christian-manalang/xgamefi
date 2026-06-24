@@ -9,12 +9,14 @@ const mocks = vi.hoisted(() => ({
   orderUpdate: vi.fn(),
   getQueue: vi.fn(() => ({ add: vi.fn() })),
   toOrderDto: vi.fn((o) => o),
+  toP2PTradeDto: vi.fn((t) => t),
+  tradeFindUnique: vi.fn(),
 }));
 
 vi.mock("@xgamefi/shared/ssrf", () => ({ safeFetch: mocks.safeFetch }));
 vi.mock("@xgamefi/shared/hmac", () => ({ signWebhook: mocks.signWebhook }));
 vi.mock("@xgamefi/shared/queues", () => ({ registerWorker: vi.fn(), getQueue: mocks.getQueue }));
-vi.mock("@xgamefi/shared/dto", () => ({ toOrderDto: mocks.toOrderDto }));
+vi.mock("@xgamefi/shared/dto", () => ({ toOrderDto: mocks.toOrderDto, toP2PTradeDto: mocks.toP2PTradeDto }));
 vi.mock("@xgamefi/db", async () => {
   const actual = await vi.importActual<typeof import("@xgamefi/db")>("@xgamefi/db");
   return {
@@ -24,6 +26,7 @@ vi.mock("@xgamefi/db", async () => {
         for (const op of ops) await op;
       }),
       order: { findUnique: mocks.findUnique, update: mocks.orderUpdate },
+      p2PTrade: { findUnique: mocks.tradeFindUnique },
       webhookDelivery: { create: mocks.create, update: mocks.update },
       studio: { findUnique: vi.fn() },
     },
@@ -47,6 +50,11 @@ beforeEach(() => {
   mocks.create.mockReset().mockResolvedValue({ id: "wd1", attempt: 0, maxAttempts: 5 });
   mocks.update.mockReset().mockResolvedValue({});
   mocks.orderUpdate.mockReset().mockResolvedValue({});
+  mocks.tradeFindUnique.mockReset().mockResolvedValue({
+    id: "t1",
+    status: "COMPLETED",
+    listing: { item: { studio: { id: "s1", webhookUrl: "https://hooks.gridlock.gg/xgamefi", webhookSecretHash: "hash" } } },
+  });
 });
 
 describe("webhookDeliveryProcessor", () => {
@@ -64,6 +72,14 @@ describe("webhookDeliveryProcessor", () => {
     await expect(webhookDeliveryProcessor({ data: { orderId: "o1" } })).rejects.toThrow(/attempt 1/);
     expect(mocks.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ attempt: expect.any(Number) }) }),
+    );
+  });
+
+  it("delivers p2p_trade_completed for a trade", async () => {
+    const res = await webhookDeliveryProcessor({ data: { tradeId: "t1", event: "p2p_trade_completed" } });
+    expect(res.status).toBe("DELIVERED");
+    expect(mocks.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ event: "p2p_trade_completed", tradeId: "t1" }) }),
     );
   });
 });
