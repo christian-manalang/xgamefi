@@ -44,7 +44,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Load test env
-        run: cp .env.test .env
+        # .env for vitest.setup/prisma.config; $GITHUB_ENV so `next build` sees
+        # the fail-fast env vars in process.env.
+        run: |
+          cp .env.test .env
+          cat .env.test >> "$GITHUB_ENV"
 
       - name: Create shadow database
         run: PGPASSWORD=pass createdb -h localhost -U user xgamefi_shadow
@@ -60,6 +64,9 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Build
+        run: pnpm -r --if-present build
 
       - name: Test
         run: pnpm test
