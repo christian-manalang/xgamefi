@@ -5,6 +5,7 @@ import { stellarWatcherProcessor } from "./jobs/stellar-watcher";
 import { payoutProcessor } from "./jobs/payout";
 import { webhookDeliveryProcessor } from "./jobs/webhook-delivery";
 import { refundProcessor } from "./jobs/refund";
+import { referralRewardProcessor } from "./jobs/referral-reward/processor";
 
 export const stubProcessor: Processor = async (_job: Job) => {
   return { handled: false, reason: "stub" };
@@ -16,6 +17,7 @@ const processors: Partial<Record<QueueName, Processor>> = {
   payout: payoutProcessor,
   "webhook-delivery": webhookDeliveryProcessor,
   refund: refundProcessor,
+  "referral-reward": referralRewardProcessor,
 };
 
 export function registeredQueueNames(): QueueName[] {
