@@ -39,6 +39,8 @@ export type OrderDto = {
   discountAmount: string;
   platformFeeAmount: string;
   netToStudioAmount: string;
+  promotionId: string | null;
+  referralCodeUsed: string | null;
   paymentStatus: OrderPaymentStatus;
   deliveryStatus: OrderDeliveryStatus;
   stellarTxHash: string | null;
@@ -59,6 +61,8 @@ export function toOrderDto(row: OrderRow): OrderDto {
     discountAmount: toStellarAmount(row.discountAmount),
     platformFeeAmount: toStellarAmount(row.platformFeeAmount),
     netToStudioAmount: toStellarAmount(row.netToStudioAmount),
+    promotionId: row.promotionId ?? null,
+    referralCodeUsed: row.referralCodeUsed ?? null,
     paymentStatus: row.paymentStatus,
     deliveryStatus: row.deliveryStatus,
     stellarTxHash: row.stellarTxHash,

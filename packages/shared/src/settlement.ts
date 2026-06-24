@@ -76,6 +76,35 @@ export async function verifyAndAdvanceOrder(args: {
       { jobId: `webhook-${order.id}` },
     );
 
+    // Referral qualification — only on the invitee's FIRST qualifying (PAID) purchase.
+    // This branch runs only on the first PAID transition, so it is inherently once-per-order.
+    const priorPaid = await tx.order.count({
+      where: { playerId: order.playerId, paymentStatus: "PAID", id: { not: order.id } },
+    });
+    if (priorPaid === 0) {
+      const pendingReferral = await tx.referral.findFirst({
+        where: { refereePlayerId: order.playerId, status: "PENDING" },
+      });
+      if (pendingReferral) {
+        const flipped = await tx.referral.updateMany({
+          where: { id: pendingReferral.id, status: "PENDING" },
+          data: {
+            status: "QUALIFIED",
+            qualifyingOrderId: order.id,
+            qualifiedAt: now,
+            studioId: order.studioId,
+          },
+        });
+        if (flipped.count === 1) {
+          await getQueue("referral-reward").add(
+            "referral-reward",
+            { referralId: pendingReferral.id },
+            { jobId: `referral-reward-${pendingReferral.id}` },
+          );
+        }
+      }
+    }
+
     return { status: "PAID" };
   });
 }

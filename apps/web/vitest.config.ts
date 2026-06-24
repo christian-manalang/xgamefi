@@ -1,7 +1,13 @@
 import { defineConfig } from "vitest/config";
+import path from "node:path";
+
 export default defineConfig({
-  // Automatic JSX runtime so component tests don't need React in scope.
   esbuild: { jsx: "automatic", jsxImportSource: "react" },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./"),
+    },
+  },
   test: {
     environment: "node",
     include: ["**/*.test.ts", "**/*.test.tsx"],

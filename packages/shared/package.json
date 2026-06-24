@@ -12,6 +12,7 @@
     "./queues": "./src/queues.ts",
     "./idempotency": "./src/idempotency.ts",
     "./settlement": "./src/settlement.ts",
+    "./promotions": "./src/promotions/index.ts",
     "./auth": "./src/auth/index.ts",
     "./dto": "./src/dto/index.ts",
     "./dto/auth": "./src/dto/auth.ts",
@@ -19,6 +20,8 @@
     "./zod/catalogue": "./src/zod/catalogue.ts",
     "./zod/checkout": "./src/zod/checkout.ts",
     "./zod/order": "./src/zod/order.ts",
+    "./zod/promotion": "./src/zod/promotion.ts",
+    "./zod/referral": "./src/zod/referral.ts",
     "./zod/shop": "./src/zod/shop.ts"
   },
   "dependencies": {

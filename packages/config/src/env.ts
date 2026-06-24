@@ -32,6 +32,9 @@ export const envSchema = z.object({
   STELLAR_USD_ASSET_ISSUER: z.string().regex(/^G[A-Z2-7]{55}$/, "must be a Stellar G... public key"),
   PLATFORM_FEE_BPS: z.coerce.number().int().min(0).max(10000),
 
+  REFERRAL_REWARD_AMOUNT: z.string().regex(/^\d+(\.\d{1,7})?$/).default("0.1"),
+  REFERRAL_REWARD_CURRENCY: z.enum(["XLM", "USDT"]).optional(),
+
   WEBHOOK_MAX_ATTEMPTS: z.coerce.number().int().min(1).default(5),
   WEBHOOK_TIMESTAMP_TOLERANCE_SEC: z.coerce.number().int().min(1).default(300),
 });

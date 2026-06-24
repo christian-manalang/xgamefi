@@ -2,6 +2,21 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Sprint 5 — Growth (#75–#84)
+
+Promotions and a referral program: server-side discounting at quote time and automatic, idempotent referrer payouts on a referred player's first purchase.
+
+- **Promotion math (#75):** `@xgamefi/shared/promotions` — `applyPromotion` pure discount/eligibility for `PERCENT`/`FIXED`/`BUNDLE`/`FIRST_PURCHASE`, honoring `startsAt`/`endsAt`, `usageLimit`/`usageCount`, `appliesToItemIds`, with floored 7-dp money.
+- **Promotion & referral DTOs (#76):** `@xgamefi/shared/dto` — `toPromotionDto`, `toReferralDto`, `toReferralPerformanceDto` + Zod schemas for promotion/referral input.
+- **Promotions studio CRUD (#77):** `GET/POST /studios/:id/promotions`, `PATCH/DELETE /studios/:id/promotions/:promoId` — tenant-isolated promotion management.
+- **Promotion at quote time (#78):** `createOrderQuote` applies the best eligible promotion inside its transaction — fee charged on the discounted price, discount + `promotionId` recorded on the `Order`, `usageCount` incremented; never recomputed client-side.
+- **Referral endpoints (#79):** `POST /api/v1/referrals` (generate), `GET /api/v1/referrals/me` (performance), `POST /api/v1/referrals/bind` — one code per referrer, idempotent bind of the invitee.
+- **Referral-reward worker (#80):** `referral-reward` job — pays the referrer via `sendPayment`, writes `LedgerEntry(REFERRAL_REWARD)`, flips the referral to `REWARDED`; idempotent on `status=QUALIFIED`.
+- **Referral qualification hook (#81):** `verifyAndAdvanceOrder` — on the invitee's first PAID order, flips their `PENDING` referral to `QUALIFIED` (sets `qualifyingOrderId`, `qualifiedAt`, `studioId`) and enqueues `referral-reward`, all inside the settlement transaction.
+- **Player referral page (#82):** `/s/[slug]/referrals` — server shell + `ReferralPanel` island that generates the code, builds a share link `${APP_BASE_URL}/s/${slug}?ref=…`, and shows invited/qualified/rewarded counts.
+- **Studio growth dashboards (#83):** `/dashboard/promotions` (`PromotionsManager` list/create island over the Task-3 API) and `/dashboard/referrals` (referral activity + `REFERRAL_REWARD` payout history, RBAC-gated, studio-scoped).
+- **Acceptance gate (#84):** `apps/web/test/acceptance/phase5-growth.test.ts` — a discounted order computes discount + fee server-side and the invitee's first purchase auto-pays the referrer, both ledgered (`SALE_IN` + `REFERRAL_REWARD`), with reward-job idempotency.
+
 ## Sprint 4 — Shop Builder (#61–#74)
 
 Studio drag-and-drop shop builder with a live player-facing preview, draft/publish workflow, and storefront contract confirmation.
