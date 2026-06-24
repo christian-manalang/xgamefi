@@ -6,11 +6,15 @@ const mocks = vi.hoisted(() => ({
   getQueue: vi.fn(() => ({ add: mocks.add })),
   orderFindUnique: vi.fn(),
   orderUpdate: vi.fn(),
+  orderCount: vi.fn(),
   ledgerCreate: vi.fn(),
+  referralFindFirst: vi.fn(),
+  referralUpdateMany: vi.fn(),
   $transaction: vi.fn(async (fn: (tx: unknown) => unknown) =>
     fn({
-      order: { findUnique: mocks.orderFindUnique, update: mocks.orderUpdate },
+      order: { findUnique: mocks.orderFindUnique, update: mocks.orderUpdate, count: mocks.orderCount },
       ledgerEntry: { create: mocks.ledgerCreate },
+      referral: { findFirst: mocks.referralFindFirst, updateMany: mocks.referralUpdateMany },
     }),
   ),
 }));
@@ -54,7 +58,10 @@ beforeEach(() => {
   mocks.$transaction.mockClear();
   mocks.orderFindUnique.mockReset().mockResolvedValue(orderBase);
   mocks.orderUpdate.mockReset().mockResolvedValue(orderBase);
+  mocks.orderCount.mockReset().mockResolvedValue(0);
   mocks.ledgerCreate.mockReset().mockResolvedValue({});
+  mocks.referralFindFirst.mockReset().mockResolvedValue(null);
+  mocks.referralUpdateMany.mockReset().mockResolvedValue({ count: 0 });
 });
 
 describe("verifyAndAdvanceOrder", () => {
