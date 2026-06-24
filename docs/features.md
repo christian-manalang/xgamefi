@@ -2,6 +2,12 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Sprint 2 — Catalogue & Storefront (#31–#47)
+
+Catalogue ingestion (pull + push) and read-only branded storefront.
+
+- **DTO mappers (#31):** `@xgamefi/shared/dto` — `toItemDto` (7-dp Stellar price, ISO dates, metadata fallback) and `toShopDto` (published layout/theme, omits draft layout) with barrel export.
+
 ## Sprint 1 — Auth & Tenancy (#14–#30)
 
 Authentication and multi-tenant authorization layer.
