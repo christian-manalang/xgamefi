@@ -1,7 +1,7 @@
 import { prisma } from "@xgamefi/db";
 import { ShopLayoutSchema } from "@xgamefi/shared";
 import { toShopDto } from "@xgamefi/shared/dto";
-import { requireStudio, scopeToStudio } from "../../../../../../lib/auth/guards";
+import { requireStudio, scopeToStudio } from "../../../../../../../lib/auth/guards";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
   const { id: studioId } = await ctx.params;

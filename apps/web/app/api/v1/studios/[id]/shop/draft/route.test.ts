@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
 }));
 
-vi.mock("../../../../../../lib/auth/guards", () => ({
+vi.mock("../../../../../../../lib/auth/guards", () => ({
   requireStudio: mocks.requireStudio,
   scopeToStudio: mocks.scopeToStudio,
 }));

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
 }));
 
-vi.mock("../../../../../../lib/auth/guards", () => ({
+vi.mock("../../../../../../../lib/auth/guards", () => ({
   requireStudio: mocks.requireStudio,
   scopeToStudio: mocks.scopeToStudio,
 }));
@@ -45,7 +45,7 @@ describe("POST /studios/:id/shop/publish", () => {
     expect(json.shop.status).toBe("PUBLISHED");
     expect(json.shop.layout.mode).toBe("grid");
     expect(json.shop.publishedAt).toBe("2026-06-23T00:00:00.000Z");
-    const arg = mocks.update.mock.calls[0][0];
+    const arg = mocks.update.mock.calls[0]![0];
     expect(arg.where).toEqual({ studioId: "stu-1" });
     expect(arg.data.layout).toEqual(draft);
     expect(arg.data.status).toBe("PUBLISHED");

@@ -5,7 +5,8 @@ import { ShopBuilder } from "./ShopBuilder";
 
 export default async function BuilderPage() {
   const principal = await requireRole("STUDIO_OWNER", "STUDIO_MEMBER", "ADMIN");
-  const studioId = principal.studioId!;
+  if (principal.kind !== "user" || !principal.studioId) throw new Error("studio required");
+  const studioId = principal.studioId;
 
   const [shop, items] = await Promise.all([
     prisma.shop.findUniqueOrThrow({

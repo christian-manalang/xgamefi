@@ -38,7 +38,7 @@ describe("ItemConfigPanel", () => {
     fireEvent.click(screen.getByTestId("config-save"));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(updated));
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("/api/v1/studios/stu-1/items/i1");
     expect(init?.method).toBe("PATCH");
     const body = JSON.parse(init!.body as string);
@@ -54,7 +54,7 @@ describe("ItemConfigPanel", () => {
     fireEvent.click(screen.getByTestId("config-unlimited"));
     fireEvent.click(screen.getByTestId("config-save"));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string);
     expect(body.stock).toBeNull();
   });
 });

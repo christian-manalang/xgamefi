@@ -17,15 +17,15 @@ describe("builderReducer", () => {
 
   it("ADD_ITEM appends to a section without duplicating", () => {
     const s1 = builderReducer(base, { type: "ADD_ITEM", sectionId: "all", itemId: i2 });
-    expect(s1.layout.sections[0].itemIds).toEqual([i1, i2]);
+    expect(s1.layout.sections[0]!.itemIds).toEqual([i1, i2]);
     const s2 = builderReducer(s1, { type: "ADD_ITEM", sectionId: "all", itemId: i1 });
-    expect(s2.layout.sections[0].itemIds).toEqual([i1, i2]);
+    expect(s2.layout.sections[0]!.itemIds).toEqual([i1, i2]);
   });
 
   it("REMOVE_ITEM drops the item from every section and from featured", () => {
     const seeded: BuilderState = { ...base, featuredItemIds: [i1] };
     const out = builderReducer(seeded, { type: "REMOVE_ITEM", itemId: i1 });
-    expect(out.layout.sections[0].itemIds).toEqual([]);
+    expect(out.layout.sections[0]!.itemIds).toEqual([]);
     expect(out.featuredItemIds).toEqual([]);
   });
 
@@ -35,7 +35,7 @@ describe("builderReducer", () => {
       layout: { mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: [i1, i2] }] },
     };
     const out = builderReducer(seeded, { type: "REORDER", sectionId: "all", from: 0, to: 1 });
-    expect(out.layout.sections[0].itemIds).toEqual([i2, i1]);
+    expect(out.layout.sections[0]!.itemIds).toEqual([i2, i1]);
   });
 
   it("TOGGLE_FEATURED adds then removes", () => {

@@ -52,6 +52,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
           if (s.id !== action.sectionId) return s;
           const next = [...s.itemIds];
           const [moved] = next.splice(action.from, 1);
+          if (!moved) return s;
           next.splice(action.to, 0, moved);
           return { ...s, itemIds: next };
         }),
