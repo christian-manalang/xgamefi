@@ -4,13 +4,16 @@
   "private": true,
   "type": "module",
   "exports": {
+    ".": "./src/index.ts",
     "./money": "./src/money.ts",
     "./hmac": "./src/hmac.ts",
     "./ssrf": "./src/ssrf.ts",
     "./stellar": "./src/stellar.ts",
     "./queues": "./src/queues.ts",
     "./auth": "./src/auth/index.ts",
+    "./dto": "./src/dto/index.ts",
     "./zod/auth": "./src/zod/auth.ts",
+    "./zod/catalogue": "./src/zod/catalogue.ts",
     "./dto/auth": "./src/dto/auth.ts"
   },
   "dependencies": {
