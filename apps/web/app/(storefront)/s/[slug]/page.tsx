@@ -73,7 +73,7 @@ export default async function Page({
 
         <StorefrontFilters categories={categories} rarities={rarities} />
 
-        <StorefrontGrid items={items} />
+        <StorefrontGrid items={items} slug={slug} />
 
         {(hasPrev || hasNext) && (
           <nav className="flex items-center justify-between gap-4 pt-4 border-t-2 border-outline-variant">

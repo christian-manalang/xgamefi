@@ -44,7 +44,7 @@ describe("ItemModal", () => {
   });
 
   it("renders item details when open", () => {
-    render(<ItemModal item={item} onClose={vi.fn()} />);
+    render(<ItemModal item={item} slug="gridlock" onClose={vi.fn()} />);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Sword Skin")).toBeInTheDocument();
     expect(screen.getByText(/blade/)).toBeInTheDocument();
@@ -52,7 +52,7 @@ describe("ItemModal", () => {
 
   it("calls onClose when the close button is clicked", () => {
     const onClose = vi.fn();
-    render(<ItemModal item={item} onClose={onClose} />);
+    render(<ItemModal item={item} slug="gridlock" onClose={onClose} />);
     fireEvent.click(screen.getByRole("button", { name: /close/i }));
     expect(onClose).toHaveBeenCalled();
   });

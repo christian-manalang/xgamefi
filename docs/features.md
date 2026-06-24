@@ -2,6 +2,24 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Sprint 3 — Primary Sale / The Demo (#48–#60)
+
+End-to-end Stellar payment flow from storefront quote through settlement, payout, webhook delivery, and real-time SSE status.
+
+- **Order DTO + checkout schemas (#48):** `@xgamefi/shared/dto/order` — `toOrderDto` with 7-dp amount serialization; `@xgamefi/shared/zod/checkout` — `CheckoutQuoteInput` / `CheckoutSubmitInput`; `@xgamefi/shared/zod/order` — `OrderEventsParams`.
+- **Shared settlement confirmer (#49):** `@xgamefi/shared/settlement` — `verifyAndAdvanceOrder` runs inside a Prisma transaction, calls `verifyPayment`, writes `LedgerEntry(SALE_IN)`, and enqueues `payout` + `webhook-delivery`.
+- **Idempotency helper (#50):** `@xgamefi/shared/idempotency` — Redis-backed lock + `IdempotencyKey` snapshot replay via `withIdempotency`.
+- **Queue registry (#51):** `@xgamefi/shared/queues` — `QUEUE_NAMES` / `QueueName`, `getRedis()`, and BullMQ queue bootstrap.
+- **Checkout quote API (#52):** `POST /api/v1/checkout/quote` — player-only route that creates an `Order` row, builds the Stellar payment XDR, and returns the QR-ready quote.
+- **Checkout submit API (#53):** `POST /api/v1/checkout/submit` — idempotent submit with `Idempotency-Key` header and fast-path settlement via `verifyAndAdvanceOrder`.
+- **Stellar watcher (#54):** `apps/worker/src/jobs/stellar-watcher.ts` — polls Horizon for payments matching the order memo and calls the shared confirmer.
+- **Payout worker (#55):** `apps/worker/src/jobs/payout.ts` — sends net amount to the studio payout wallet and writes `LedgerEntry(PAYOUT_OUT)`.
+- **Webhook delivery (#56):** `apps/worker/src/jobs/webhook-delivery.ts` — signed `purchase_completed` POST with retry + exponential backoff; DLQs exhausted deliveries to the `refund` queue.
+- **Refund stub (#57):** `apps/worker/src/jobs/refund.ts` — marks order `REFUNDED` and writes a `REFUND` ledger entry.
+- **Order events SSE (#58):** `GET /api/v1/orders/[id]/events` — Redis pub/sub-backed SSE stream with auth check; `apps/web/lib/sse.ts` stream helper.
+- **Checkout page (#59):** `/s/[slug]/checkout` — server component loads shop + item; client island renders QR code, detects Freighter, and subscribes to SSE for live status.
+- **Demo e2e (#60):** Playwright acceptance test covering storefront → checkout → programmatic testnet payment → `PAID / DELIVERED` status.
+
 ## Sprint 2 — Catalogue & Storefront (#31–#47)
 
 Catalogue ingestion (pull + push) and read-only branded storefront.
