@@ -20,6 +20,7 @@
     "./zod/catalogue": "./src/zod/catalogue.ts",
     "./zod/checkout": "./src/zod/checkout.ts",
     "./zod/order": "./src/zod/order.ts",
+    "./zod/p2p": "./src/zod/p2p.ts",
     "./zod/promotion": "./src/zod/promotion.ts",
     "./zod/referral": "./src/zod/referral.ts",
     "./zod/shop": "./src/zod/shop.ts"
