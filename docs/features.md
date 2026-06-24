@@ -7,6 +7,22 @@ A running log of shipped features. Append one entry per change (newest first).
 Catalogue ingestion (pull + push) and read-only branded storefront.
 
 - **DTO mappers (#31):** `@xgamefi/shared/dto` — `toItemDto` (7-dp Stellar price, ISO dates, metadata fallback) and `toShopDto` (published layout/theme, omits draft layout) with barrel export.
+- **Catalogue schemas (#32):** `@xgamefi/shared/zod/catalogue` — `RemoteItem`, `RemoteItemsSchema`, `ItemOverrideInput` and `ShopItemsQuery`.
+- **Shared catalogue upsert (#33):** `@xgamefi/shared/catalogue/upsert` — transaction-based upsert by `studioId_externalId` plus stale-item deactivation.
+- **Remote fetch guard (#34):** `@xgamefi/shared/catalogue/fetch-remote` — SSRF-safe `fetchRemoteItems(apiBaseUrl)` via `safeFetch`.
+- **Catalogue-sync worker (#35):** `apps/worker/src/jobs/catalogue-sync.ts` — BullMQ processor that pulls and upserts a studio’s catalogue.
+- **Inbound ingest auth (#36):** `apps/web/lib/ingest-auth.ts` — API-key hash lookup + HMAC-SHA256 verification for `/ingest/*`.
+- **Ingest items API (#37):** `POST /api/v1/ingest/items` — idempotent push ingest delegating to `upsertCatalogueItems`.
+- **Studio items API (#38):** `GET /studios/[id]/items`, `POST /studios/[id]/items/sync`, `PATCH /studios/[id]/items/[itemId]` — studio-scoped list, sync trigger and override.
+- **Public item API (#39):** `GET /api/v1/items/[id]` — public active-item lookup.
+- **Shop config API (#40):** `GET /studios/[id]/shop` (studio) and `GET /api/v1/shops/[slug]` (public) — published shop config.
+- **Storefront items query (#41):** `GET /api/v1/shops/[slug]/items` — filtered, paginated public catalogue (`q`, `category`, `rarity`, `featured`).
+- **Studio items dashboard (#42):** `/dashboard/items` — server component listing synced items with branded `ItemRow` cards.
+- **Brand override helper (#43):** `app/(storefront)/s/[slug]/brand.ts` — converts a studio brand blob into CSS custom properties.
+- **Storefront islands (#44):** `ItemCard`, `ItemModal` and `StorefrontFilters` client components.
+- **Storefront grid page (#45):** `/s/[slug]` — published shop grid with filters, pagination and per-studio branding.
+- **Item detail page (#46):** `/s/[slug]/item/[itemId]` — public item detail view with breadcrumb, metadata and brand overrides.
+- **Phase verification (#47):** full test/typecheck/lint pass, `docs/features.md` updated, branch pushed and PR opened.
 
 ## Sprint 1 — Auth & Tenancy (#14–#30)
 
