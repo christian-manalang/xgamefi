@@ -10,7 +10,7 @@ import {
 } from "@stellar/stellar-sdk";
 import { Prisma } from "@xgamefi/db";
 import { env } from "@xgamefi/config/env";
-import { fromStellarAmount } from "./money.js";
+import { fromStellarAmount } from "./money";
 
 export type Asset = { code: "XLM" } | { code: string; issuer: string };
 
