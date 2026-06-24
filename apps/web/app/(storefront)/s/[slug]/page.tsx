@@ -10,7 +10,7 @@ import {
 } from "../../../../lib/catalogue-queries";
 import { brandToStyle } from "./brand";
 import { StorefrontFilters } from "./_components/storefront-filters";
-import { StorefrontGrid } from "./_components/storefront-grid";
+import { StorefrontGrid } from "./StorefrontGrid";
 
 function toFlatSearchParams(raw: Record<string, string | string[] | undefined>): URLSearchParams {
   const sp = new URLSearchParams();
@@ -73,7 +73,13 @@ export default async function Page({
 
         <StorefrontFilters categories={categories} rarities={rarities} />
 
-        <StorefrontGrid items={items} slug={slug} />
+        <StorefrontGrid
+          layout={shop.layout}
+          theme={shop.theme}
+          featuredItemIds={shop.featuredItemIds}
+          items={items}
+          slug={slug}
+        />
 
         {(hasPrev || hasNext) && (
           <nav className="flex items-center justify-between gap-4 pt-4 border-t-2 border-outline-variant">

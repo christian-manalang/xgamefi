@@ -37,10 +37,12 @@ vi.mock("next/link", () => ({
 import Page from "./page";
 
 const shop: ShopDto = {
+  id: "shop-1",
   studioId: "stu1",
   slug: "gridlock",
   status: "PUBLISHED",
   layout: { mode: "grid", sections: [] },
+  draftLayout: null,
   theme: {},
   featuredItemIds: [],
   publishedAt: new Date().toISOString(),

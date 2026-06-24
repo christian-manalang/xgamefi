@@ -2,6 +2,25 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Sprint 4 — Shop Builder (#61–#74)
+
+Studio drag-and-drop shop builder with a live player-facing preview, draft/publish workflow, and storefront contract confirmation.
+
+- **ShopLayout Zod schema & types (#61):** `packages/shared/src/zod/shop` — `ShopLayoutSchema`, `ShopThemeSchema`, `ShopDraftInputSchema` and inferred types; single source of truth for layout, theme, sections and draft input.
+- **ShopDto studio view (#62):** `packages/shared/src/dto/shop` — `toShopDto` now exposes `id`, `slug` and `draftLayout` for the builder page.
+- **Storefront contract guard (#63):** `apps/web/app/(storefront)/s/[slug]/StorefrontGrid.tsx` — presentational grid/list renderer that consumes `layout`/`theme`/`featuredItemIds`; shared by the public storefront and builder preview.
+- **Draft handler (#64):** `PUT /api/v1/studios/:id/shop/draft` — validates `ShopDraftInputSchema`, persists `draftLayout`/`theme`/`featuredItemIds`.
+- **Publish handler (#65):** `POST /api/v1/studios/:id/shop/publish` — validates saved `draftLayout`, promotes it to `layout`, sets `PUBLISHED` + `publishedAt`.
+- **Builder page (#66):** `apps/web/app/(studio)/dashboard/builder/page.tsx` — server component loads the principal's shop + active items and renders the builder island.
+- **Builder store (#67):** `apps/web/app/(studio)/dashboard/builder/lib/useBuilderStore.ts` — typed reducer for `SET_MODE`, `ADD_ITEM`, `REMOVE_ITEM`, `REORDER`, `TOGGLE_FEATURED`, `SELECT_ITEM`.
+- **ItemLibrary panel (#68):** `apps/web/app/(studio)/dashboard/builder/components/ItemLibrary.tsx` — `w-80` right column of draggable synced items with ADD fallback.
+- **LayoutCanvas panel (#69):** `apps/web/app/(studio)/dashboard/builder/components/LayoutCanvas.tsx` — center drop target with grid/list toggle, featured/remove controls.
+- **ItemConfigPanel (#70):** `apps/web/app/(studio)/dashboard/builder/components/ItemConfigPanel.tsx` — `w-64` left tools column reusing `PATCH /studios/:id/items/:itemId` for price/currency/stock/sale-window.
+- **StorefrontPreview (#71):** `apps/web/app/(studio)/dashboard/builder/components/StorefrontPreview.tsx` — wraps the shared `StorefrontGrid` so preview == player output.
+- **ShopBuilder island (#72):** `apps/web/app/(studio)/dashboard/builder/ShopBuilder.tsx` — three-column shell (`w-64` · fluid · `w-80`) with drag-and-drop, save-draft, publish and `motion-safe` reduced-motion gating.
+- **E2E acceptance (#73):** `apps/web/e2e/shop-builder.spec.ts` — Playwright gate proving add → feature → list → publish → `/s/gridlock` reflects.
+- **Dashboard nav + verification (#74):** `apps/web/app/(studio)/dashboard/_components/SideRail.tsx` + dashboard layout — adds BUILDER link; full phase lint/typecheck/test pass.
+
 ## Sprint 3 — Primary Sale / The Demo (#48–#60)
 
 End-to-end Stellar payment flow from storefront quote through settlement, payout, webhook delivery, and real-time SSE status.

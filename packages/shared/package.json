@@ -18,7 +18,8 @@
     "./zod/auth": "./src/zod/auth.ts",
     "./zod/catalogue": "./src/zod/catalogue.ts",
     "./zod/checkout": "./src/zod/checkout.ts",
-    "./zod/order": "./src/zod/order.ts"
+    "./zod/order": "./src/zod/order.ts",
+    "./zod/shop": "./src/zod/shop.ts"
   },
   "dependencies": {
     "@xgamefi/db": "workspace:*",
