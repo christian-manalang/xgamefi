@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import { prisma, Prisma } from "@xgamefi/db";
 
 const add = vi.fn(async (..._args: unknown[]) => {});
@@ -64,6 +64,9 @@ describe("verifyAndAdvanceOrder referral hook", () => {
     add.mockClear();
     await reset();
   });
+
+  // Leave a clean DB for later test files (shared DB, sequential run).
+  afterAll(reset);
 
   it("on first PAID: marks referral QUALIFIED and enqueues referral-reward", async () => {
     const orderId = await seed();
