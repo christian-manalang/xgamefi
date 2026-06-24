@@ -2,7 +2,9 @@
   "name": "xgamefi",
   "private": true,
   "packageManager": "pnpm@10.12.1",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "lint": "eslint .",
@@ -13,15 +15,23 @@
     "db:migrate": "pnpm --filter @xgamefi/db db:migrate"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
-    "vitest": "^3.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@xgamefi/config": "workspace:*",
+    "dotenv": "^16.4.0",
     "eslint": "^9.15.0",
     "prettier": "^3.4.0",
-    "dotenv": "^16.4.0",
-    "@xgamefi/config": "workspace:*"
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["argon2", "prisma", "@prisma/client", "@prisma/engines", "esbuild", "sharp"],
+    "onlyBuiltDependencies": [
+      "argon2",
+      "prisma",
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "sharp"
+    ],
     "overrides": {
       "ioredis": "5.11.1",
       "axios": "^1.16.0"
