@@ -12,7 +12,7 @@ describe("ShopLayoutSchema", () => {
     };
     const parsed = ShopLayoutSchema.parse(layout);
     expect(parsed.mode).toBe("grid");
-    expect(parsed.sections[0].itemIds).toEqual([id]);
+    expect(parsed.sections[0]!.itemIds).toEqual([id]);
   });
 
   it("accepts list mode", () => {
