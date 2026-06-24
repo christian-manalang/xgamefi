@@ -8,8 +8,10 @@ describe("RemoteItemsSchema", () => {
         imageUrl: "https://cdn.example.com/s.png", price: "1.0000000",
         currency: "USDT", stock: null, metadata: { dmg: 10 } },
     ]);
-    expect(parsed[0].externalId).toBe("sword_skin_01");
-    expect(parsed[0].price).toBe("1.0000000");
+    const first = parsed[0];
+    expect(first).toBeDefined();
+    expect(first!.externalId).toBe("sword_skin_01");
+    expect(first!.price).toBe("1.0000000");
   });
 
   it("rejects an unknown currency", () => {

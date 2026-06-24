@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@xgamefi/db", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@xgamefi/db")>("@xgamefi/db");
+  const actual = await importOriginal<typeof import("@xgamefi/db")>();
   return { ...actual, prisma: { $transaction: mocks.$transaction } };
 });
 
@@ -29,7 +29,9 @@ describe("upsertCatalogueItems", () => {
     ]);
 
     expect(mocks.upsert).toHaveBeenCalledTimes(2);
-    expect(mocks.upsert.mock.calls[0][0].where).toEqual({
+    const firstCall = mocks.upsert.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    expect(firstCall![0].where).toEqual({
       studioId_externalId: { studioId: "stu1", externalId: "a" },
     });
     expect(mocks.updateMany).toHaveBeenCalledWith({

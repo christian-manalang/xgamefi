@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   idemCreate: vi.fn(),
 }));
 
-vi.mock("../../../../../../lib/ingest-auth", () => ({
+vi.mock("../../../../../lib/ingest-auth", () => ({
   authenticateIngest: mocks.authenticateIngest,
   IngestAuthError: class extends Error { status = 401; },
 }));

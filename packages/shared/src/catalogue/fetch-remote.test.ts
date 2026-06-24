@@ -24,7 +24,9 @@ describe("fetchRemoteItems", () => {
       expect.objectContaining({ maxBytes: 1_000_000, timeoutMs: 10_000 }),
     );
     expect(items).toHaveLength(1);
-    expect(items[0].externalId).toBe("sword_skin_01");
+    const first = items[0];
+    expect(first).toBeDefined();
+    expect(first!.externalId).toBe("sword_skin_01");
   });
 
   it("throws on non-2xx", async () => {

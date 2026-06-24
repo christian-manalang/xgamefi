@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { prisma } from "@xgamefi/db";
 import { upsertCatalogueItems } from "@xgamefi/shared";
 import { RemoteItemsSchema } from "@xgamefi/shared/zod/catalogue";
-import { authenticateIngest, IngestAuthError } from "../../../../../../lib/ingest-auth";
+import { authenticateIngest, IngestAuthError } from "../../../../../lib/ingest-auth";
 
 export async function POST(req: Request): Promise<Response> {
   const rawBody = await req.text();
