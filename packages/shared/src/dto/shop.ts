@@ -1,31 +1,30 @@
-import { Prisma } from "@xgamefi/db";
+import type { ShopLayout, ShopTheme } from "../zod/shop";
 
-export type ShopLayout = {
-  mode: "grid" | "list";
-  sections: { id: string; title?: string; itemIds: string[] }[];
-};
-
-export type ShopRow = {
+export type ShopWithSlug = {
+  id: string;
   studioId: string;
   status: "DRAFT" | "PUBLISHED";
-  layout: Prisma.JsonValue | null;
-  theme: Prisma.JsonValue | null;
+  layout: unknown;
+  draftLayout: unknown | null;
+  theme: unknown;
   featuredItemIds: string[];
   publishedAt: Date | null;
   studio: { slug: string };
 };
 
 export type ShopDto = {
+  id: string;
   studioId: string;
   slug: string;
   status: "DRAFT" | "PUBLISHED";
   layout: ShopLayout;
-  theme: Record<string, unknown>;
+  draftLayout: ShopLayout | null;
+  theme: ShopTheme;
   featuredItemIds: string[];
   publishedAt: string | null;
 };
 
-function coerceLayout(value: Prisma.JsonValue | null): ShopLayout {
+function coerceLayout(value: unknown): ShopLayout {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const v = value as Record<string, unknown>;
     const mode = v.mode === "list" ? "list" : "grid";
@@ -35,13 +34,22 @@ function coerceLayout(value: Prisma.JsonValue | null): ShopLayout {
   return { mode: "grid", sections: [] };
 }
 
-export function toShopDto(row: ShopRow): ShopDto {
+function coerceTheme(value: unknown): ShopTheme {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as ShopTheme;
+  }
+  return {};
+}
+
+export function toShopDto(row: ShopWithSlug): ShopDto {
   return {
+    id: row.id,
     studioId: row.studioId,
     slug: row.studio.slug,
     status: row.status,
     layout: coerceLayout(row.layout),
-    theme: (row.theme ?? {}) as Record<string, unknown>,
+    draftLayout: row.draftLayout ? coerceLayout(row.draftLayout) : null,
+    theme: coerceTheme(row.theme),
     featuredItemIds: row.featuredItemIds,
     publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
   };
