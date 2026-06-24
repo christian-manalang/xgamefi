@@ -18,9 +18,9 @@ const BRAND_CSS_MAP: Record<keyof BrandOverride, string> = {
   monoFont: "--font-mono",
 };
 
-export function brandToCssVars(brand: Record<string, unknown> | null): CSSProperties {
+export function brandToCssVars(brand: Record<string, unknown> | null): Record<string, string> {
   const vars: Record<string, string> = {};
-  if (!brand) return vars as CSSProperties;
+  if (!brand) return vars;
 
   for (const [key, value] of Object.entries(brand)) {
     const cssVar = BRAND_CSS_MAP[key as keyof BrandOverride];
@@ -29,5 +29,9 @@ export function brandToCssVars(brand: Record<string, unknown> | null): CSSProper
     }
   }
 
-  return vars as CSSProperties;
+  return vars;
+}
+
+export function brandToStyle(brand: Record<string, unknown> | null): CSSProperties {
+  return brandToCssVars(brand) as CSSProperties;
 }

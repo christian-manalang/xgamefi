@@ -46,6 +46,32 @@ export async function getPublicItem(id: string): Promise<ItemDto | null> {
   return row ? toItemDto(row) : null;
 }
 
+export async function getShopFilterOptions(slug: string): Promise<{ categories: string[]; rarities: string[] }> {
+  const shop = await prisma.shop.findFirst({
+    where: { studio: { slug }, status: "PUBLISHED" },
+    select: { studioId: true },
+  });
+  if (!shop) return { categories: [], rarities: [] };
+
+  const [categoryRows, rarityRows] = await Promise.all([
+    prisma.item.findMany({
+      where: { studioId: shop.studioId, isActive: true, category: { not: null } },
+      distinct: ["category"],
+      select: { category: true },
+    }),
+    prisma.item.findMany({
+      where: { studioId: shop.studioId, isActive: true, rarity: { not: null } },
+      distinct: ["rarity"],
+      select: { rarity: true },
+    }),
+  ]);
+
+  return {
+    categories: categoryRows.map((r) => r.category).filter((c): c is string => c !== null).sort(),
+    rarities: rarityRows.map((r) => r.rarity).filter((r): r is string => r !== null).sort(),
+  };
+}
+
 export async function getStudioBrand(slug: string): Promise<Record<string, unknown> | null> {
   const studio = await prisma.studio.findUnique({ where: { slug }, select: { brand: true, name: true } });
   if (!studio) return null;
