@@ -17,6 +17,11 @@ describe("Phase 1 acceptance gate", () => {
     await redis.flushdb();
     await prisma.session.deleteMany();
     await prisma.authChallenge.deleteMany();
+    // Clear rows that reference Player (FK) so the wipe is order-independent in the shared test DB.
+    await prisma.ledgerEntry.deleteMany();
+    await prisma.order.deleteMany();
+    await prisma.referral.deleteMany();
+    await prisma.itemOwnership.deleteMany();
     await prisma.player.deleteMany();
     await prisma.user.deleteMany();
     await prisma.user.create({ data: { username: "admin", passwordHash: await hashPassword("pw"), role: "ADMIN", isActive: true } });

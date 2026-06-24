@@ -16,6 +16,11 @@ describe("wallet auth", () => {
     await redis.flushdb();
     await prisma.session.deleteMany();
     await prisma.authChallenge.deleteMany();
+    // Clear rows that reference Player (FK) so the wipe is order-independent in the shared test DB.
+    await prisma.ledgerEntry.deleteMany();
+    await prisma.order.deleteMany();
+    await prisma.referral.deleteMany();
+    await prisma.itemOwnership.deleteMany();
     await prisma.player.deleteMany();
   });
 
