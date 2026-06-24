@@ -8,9 +8,10 @@
     "start": "node --env-file-if-exists=../../.env --import tsx src/index.ts"
   },
   "dependencies": {
-    "@xgamefi/shared": "workspace:*",
+    "@stellar/stellar-sdk": "^15.1.0",
     "@xgamefi/config": "workspace:*",
     "@xgamefi/db": "workspace:*",
+    "@xgamefi/shared": "workspace:*",
     "bullmq": "^5.34.0",
     "ioredis": "^5.4.0"
   },

@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { ItemDto } from "@xgamefi/shared/dto";
 
-export function ItemModal({ item, onClose }: { item: ItemDto | null; onClose: () => void }) {
+export function ItemModal({ item, slug, onClose }: { item: ItemDto | null; slug: string; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -53,6 +54,13 @@ export function ItemModal({ item, onClose }: { item: ItemDto | null; onClose: ()
             {item.price.amount} <span className="text-[12px] font-mono">{item.price.currency}</span>
           </span>
         </div>
+
+        <Link
+          href={`/s/${slug}/checkout?item=${item.id}`}
+          className="block w-full text-center bg-primary-fixed text-on-primary-fixed py-3 font-mono uppercase tracking-[0.1em] text-[12px] hover:opacity-90 transition-opacity"
+        >
+          Buy Now
+        </Link>
       </div>
     </dialog>
   );

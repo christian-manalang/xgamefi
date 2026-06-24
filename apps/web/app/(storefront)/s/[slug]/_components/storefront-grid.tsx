@@ -5,7 +5,7 @@ import type { ItemDto } from "@xgamefi/shared/dto";
 import { ItemCard } from "./item-card";
 import { ItemModal } from "./item-modal";
 
-export function StorefrontGrid({ items }: { items: ItemDto[] }) {
+export function StorefrontGrid({ items, slug }: { items: ItemDto[]; slug: string }) {
   const [selected, setSelected] = useState<ItemDto | null>(null);
 
   if (items.length === 0) {
@@ -23,7 +23,7 @@ export function StorefrontGrid({ items }: { items: ItemDto[] }) {
           <ItemCard key={item.id} item={item} onSelect={setSelected} />
         ))}
       </div>
-      <ItemModal item={selected} onClose={() => setSelected(null)} />
+      <ItemModal item={selected} slug={slug} onClose={() => setSelected(null)} />
     </>
   );
 }

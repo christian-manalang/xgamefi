@@ -70,6 +70,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string;
               </span>
             </div>
 
+            <Link
+              href={`/s/${slug}/checkout?item=${item.id}`}
+              className="block w-full text-center bg-primary-fixed text-on-primary-fixed py-4 font-mono uppercase tracking-[0.1em] text-[12px] hover:opacity-90 transition-opacity"
+            >
+              Buy
+            </Link>
+
             {Object.keys(item.metadata).length > 0 && (
               <dl className="grid grid-cols-2 gap-2">
                 {Object.entries(item.metadata).map(([key, value]) => (
