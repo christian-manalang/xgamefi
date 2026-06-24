@@ -36,14 +36,94 @@ services:
       - "9001:9001"
     volumes:
       - minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   createbuckets:
     image: minio/mc
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     entrypoint: >
       /bin/sh -c "until (mc alias set local http://minio:9000 minioadmin minioadmin) do sleep 1; done;
       mc mb -p local/xgamefi; mc anonymous set download local/xgamefi; exit 0;"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrate
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi
+      SHADOW_DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi_shadow
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: seed
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi
+      SHADOW_DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi_shadow
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi
+      SHADOW_DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi_shadow
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      HOSTNAME: 0.0.0.0
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi
+      SHADOW_DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi_shadow
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
 
 volumes:
   pgdata: {}

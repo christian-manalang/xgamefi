@@ -24,10 +24,22 @@ All money/trust-boundary logic (fee math, payment verification, HMAC, SSRF) live
 
 ## Getting started
 
+### Full stack in Docker
+
 ```bash
 pnpm install
 cp .env.example .env          # then fill in values
-docker compose up -d          # Postgres 17, Redis 7, MinIO
+docker compose up -d --build  # Postgres 17, Redis 7, MinIO + web (:3000) + worker + migrate/seed
+```
+
+The `web` container runs Next.js in dev mode. Migrations and seed run automatically before the app starts.
+
+### Local pnpm workflow
+
+```bash
+pnpm install
+cp .env.example .env          # then fill in values
+docker compose up -d          # Postgres 17, Redis 7, MinIO only
 pnpm db:generate
 pnpm --filter @xgamefi/db exec prisma migrate deploy
 pnpm db:seed                  # admin + Gridlock studio + published shop + Sword Skin @ 1 USDT

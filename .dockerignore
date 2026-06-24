@@ -1,0 +1,17 @@
+node_modules
+.pnpm-store
+.git
+.env
+.env.local
+.env.*.local
+.next
+dist
+coverage
+.vscode
+.idea
+.DS_Store
+*.log
+apps/web/.next
+apps/*/dist
+packages/*/dist
+packages/db/src/generated
