@@ -19,6 +19,7 @@ export async function POST(req: Request): Promise<Response> {
     itemId: parsed.data.itemId,
     quantity: parsed.data.quantity,
     currency: parsed.data.currency,
+    referralCode: parsed.data.referralCode,
   });
 
   return NextResponse.json(result, { status: 200 });
