@@ -1,6 +1,9 @@
 import { prisma, Prisma } from "@xgamefi/db";
 import { assertOwnsItem } from "@xgamefi/shared/p2p/ownership";
-import { toP2PListingDto, type P2PListingDto } from "@xgamefi/shared/dto";
+import { toP2PListingDto, toP2PTradeDto, type P2PListingDto, type P2PTradeDto } from "@xgamefi/shared/dto";
+import { feeAmount, netAmount, toStellarAmount } from "@xgamefi/shared/money";
+import { buildPaymentXdr, type Asset } from "@xgamefi/shared/stellar";
+import { env } from "@xgamefi/config/env";
 
 export async function createListing(input: {
   sellerPlayerId: string;
@@ -43,4 +46,81 @@ export async function createListing(input: {
 export async function getListing(id: string): Promise<P2PListingDto | null> {
   const row = await prisma.p2PListing.findUnique({ where: { id } });
   return row ? toP2PListingDto(row) : null;
+}
+
+export type TradeQuoteResult = {
+  trade: P2PTradeDto;
+  quote: {
+    destination: string;
+    asset: Asset;
+    amount: string;
+    memo: string;
+    unsignedXdr: string;
+  };
+};
+
+export async function createTradeQuote(input: {
+  buyerPlayerId: string;
+  listingId: string;
+}): Promise<TradeQuoteResult> {
+  const listing = await prisma.p2PListing.findUnique({
+    where: { id: input.listingId },
+    include: { seller: true, item: true },
+  });
+  if (!listing) throw new Error("listing not found");
+  if (listing.status !== "ACTIVE") throw new Error("listing not available");
+  if (listing.sellerPlayerId === input.buyerPlayerId) throw new Error("cannot buy your own listing");
+
+  const platformFee = feeAmount(listing.price, env.PLATFORM_FEE_BPS);
+  const net = netAmount(listing.price, env.PLATFORM_FEE_BPS);
+
+  const trade = await prisma.$transaction(async (tx) => {
+    await tx.p2PListing.update({ where: { id: listing.id }, data: { status: "LOCKED", lockedAt: new Date() } });
+    await tx.itemOwnership.updateMany({
+      where: { playerId: listing.sellerPlayerId, itemId: listing.itemId },
+      data: { lockedForListingId: listing.id },
+    });
+    return tx.p2PTrade.create({
+      data: {
+        listingId: listing.id,
+        buyerPlayerId: input.buyerPlayerId,
+        sellerPlayerId: listing.sellerPlayerId,
+        price: listing.price,
+        currency: listing.currency,
+        platformFeeAmount: platformFee,
+        netToSellerAmount: net,
+        status: "ESCROW_PENDING",
+        idempotencyKey: `p2p-quote:${input.buyerPlayerId}:${listing.id}:${Date.now()}`,
+      },
+    });
+  });
+
+  const asset: Asset =
+    trade.currency === "XLM"
+      ? { code: "XLM" }
+      : { code: env.STELLAR_USD_ASSET_CODE, issuer: env.STELLAR_USD_ASSET_ISSUER };
+  const amount = toStellarAmount(trade.price);
+  const unsignedXdr = await buildPaymentXdr({
+    destination: env.STELLAR_RECEIVING_ACCOUNT,
+    asset,
+    amount,
+    memo: trade.id,
+    source: env.STELLAR_RECEIVING_ACCOUNT,
+  });
+
+  return {
+    trade: toP2PTradeDto(trade),
+    quote: {
+      destination: env.STELLAR_RECEIVING_ACCOUNT,
+      asset,
+      amount,
+      memo: trade.id,
+      unsignedXdr,
+    },
+  };
+}
+
+export async function getTrade(tradeId: string): Promise<P2PTradeDto | null> {
+  const row = await prisma.p2PTrade.findUnique({ where: { id: tradeId } });
+  return row ? toP2PTradeDto(row) : null;
 }
