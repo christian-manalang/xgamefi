@@ -1,36 +1,66 @@
-import { prisma } from "@xgamefi/db";
+import { prisma, Prisma } from "@xgamefi/db";
 import { env } from "@xgamefi/config/env";
 import { signWebhook } from "@xgamefi/shared/hmac";
 import { safeFetch } from "@xgamefi/shared/ssrf";
-import { toOrderDto, type OrderRow } from "@xgamefi/shared/dto";
+import { toOrderDto, toP2PTradeDto, type OrderRow } from "@xgamefi/shared/dto";
 import { getQueue } from "@xgamefi/shared/queues";
 
-export type WebhookDeliveryJobData = { orderId: string };
+export type WebhookDeliveryJobData = { orderId?: string; tradeId?: string; event?: string };
 
-function eventName(event: "purchase_completed" | "purchase_pending" | "purchase_failed"): string {
+type WebhookEventName = "purchase_completed" | "purchase_pending" | "purchase_failed" | "p2p_trade_completed";
+
+function eventName(event: WebhookEventName): string {
   return event.replace(/_/g, ".");
 }
 
 export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobData }): Promise<{ status: string }> {
-  const { orderId } = job.data;
-  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { studio: true, item: true } });
-  if (!order) throw new Error(`webhook-delivery: order ${orderId} not found`);
-  if (order.paymentStatus !== "PAID") throw new Error(`webhook-delivery: order ${orderId} is not PAID`);
-  if (!order.studio?.webhookUrl) throw new Error(`webhook-delivery: studio ${order.studioId} has no webhookUrl`);
-  const studio = order.studio;
+  let studioId: string;
+  let webhookUrl: string;
+  let webhookSecretHash: string;
+  let event: WebhookEventName;
+  let payload: Prisma.InputJsonValue;
+  let linkOrderId: string | undefined;
+  let linkTradeId: string | undefined;
 
-  const event: "purchase_completed" = "purchase_completed";
-  const payload = { event: eventName(event), order: toOrderDto(order as unknown as OrderRow) };
+  if (job.data.tradeId) {
+    const trade = await prisma.p2PTrade.findUnique({
+      where: { id: job.data.tradeId },
+      include: { listing: { include: { item: { include: { studio: true } } } } },
+    });
+    if (!trade) throw new Error(`webhook-delivery: trade ${job.data.tradeId} not found`);
+    const studio = trade.listing.item.studio;
+    if (!studio?.webhookUrl) throw new Error(`webhook-delivery: studio ${studio?.id} has no webhookUrl`);
+    studioId = studio.id;
+    webhookUrl = studio.webhookUrl;
+    webhookSecretHash = studio.webhookSecretHash ?? "";
+    event = "p2p_trade_completed";
+    payload = { event: eventName(event), trade: toP2PTradeDto(trade) };
+    linkTradeId = trade.id;
+  } else {
+    const orderId = job.data.orderId;
+    const order = await prisma.order.findUnique({ where: { id: orderId }, include: { studio: true, item: true } });
+    if (!order) throw new Error(`webhook-delivery: order ${orderId} not found`);
+    if (order.paymentStatus !== "PAID") throw new Error(`webhook-delivery: order ${orderId} is not PAID`);
+    if (!order.studio?.webhookUrl) throw new Error(`webhook-delivery: studio ${order.studioId} has no webhookUrl`);
+    studioId = order.studio.id;
+    webhookUrl = order.studio.webhookUrl;
+    webhookSecretHash = order.studio.webhookSecretHash ?? "";
+    event = "purchase_completed";
+    payload = { event: eventName(event), order: toOrderDto(order as unknown as OrderRow) };
+    linkOrderId = order.id;
+  }
+
   const rawBody = JSON.stringify(payload);
   const timestamp = Math.floor(Date.now() / 1000);
-  const signature = signWebhook(studio.webhookSecretHash ?? "", timestamp, rawBody);
+  const signature = signWebhook(webhookSecretHash, timestamp, rawBody);
 
   const delivery = await prisma.webhookDelivery.create({
     data: {
-      studioId: studio.id,
+      studioId,
       event,
-      orderId: order.id,
-      url: order.studio.webhookUrl,
+      orderId: linkOrderId,
+      tradeId: linkTradeId,
+      url: webhookUrl,
       payload,
       signature,
       attempt: 0,
@@ -41,7 +71,7 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
 
   let responseStatus: number | null = null;
   try {
-    const res = await safeFetch(order.studio.webhookUrl, {
+    const res = await safeFetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -54,17 +84,20 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
     });
     responseStatus = res.status;
     if (res.ok) {
-      await prisma.$transaction([
+      const ops: unknown[] = [
         prisma.webhookDelivery.update({
           where: { id: delivery.id },
           data: { status: "DELIVERED", responseStatus, deliveredAt: new Date() },
         }),
-        prisma.order.update({ where: { id: order.id }, data: { deliveryStatus: "DELIVERED", deliveredAt: new Date() } }),
-      ]);
+      ];
+      if (linkOrderId) {
+        ops.push(prisma.order.update({ where: { id: linkOrderId }, data: { deliveryStatus: "DELIVERED", deliveredAt: new Date() } }));
+      }
+      await prisma.$transaction(ops as never);
       return { status: "DELIVERED" };
     }
   } catch (err) {
-    console.error(`webhook-delivery: network error for order ${orderId}`, err);
+    console.error(`webhook-delivery: network error for ${linkTradeId ?? linkOrderId}`, err);
   }
 
   const nextAttempt = delivery.attempt + 1;
@@ -81,8 +114,11 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
   });
 
   if (isExhausted) {
-    await prisma.order.update({ where: { id: order.id }, data: { deliveryStatus: "FAILED" } });
-    await getQueue("refund").add("refund", { orderId: order.id }, { jobId: `refund-${order.id}` });
+    // Order webhooks that exhaust trigger a buyer refund; P2P trades have already settled and paid out.
+    if (linkOrderId) {
+      await prisma.order.update({ where: { id: linkOrderId }, data: { deliveryStatus: "FAILED" } });
+      await getQueue("refund").add("refund", { orderId: linkOrderId }, { jobId: `refund-${linkOrderId}` });
+    }
     return { status: "EXHAUSTED" };
   }
 
