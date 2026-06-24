@@ -14,6 +14,8 @@
     "./settlement": "./src/settlement.ts",
     "./promotions": "./src/promotions/index.ts",
     "./auth": "./src/auth/index.ts",
+    "./p2p/ownership": "./src/p2p/ownership.ts",
+    "./p2p/settlement": "./src/p2p/settlement.ts",
     "./dto": "./src/dto/index.ts",
     "./dto/auth": "./src/dto/auth.ts",
     "./zod/auth": "./src/zod/auth.ts",
