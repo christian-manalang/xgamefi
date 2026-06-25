@@ -2,6 +2,13 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Docker full-stack build fix (#124)
+
+Fixed `docker compose up -d --build` failing during image build when `pnpm db:generate` could not resolve the `prisma` CLI inside `packages/db`.
+
+- **Root cause:** With pnpm's isolated linker, the first `pnpm install --frozen-lockfile` ran before the full workspace source was copied, leaving a dangling `packages/db/node_modules/prisma` symlink.
+- **Fix:** Added a second `RUN pnpm install --frozen-lockfile` after `COPY . .` in `Dockerfile` so workspace symlinks are reified against the complete source tree, plus moved `prisma` from `devDependencies` to `dependencies` in `packages/db/package.json` because the CLI is required at runtime by the `migrate` and `seed` targets.
+
 ## Sprint 7 — Admin & Ops (#97–#112)
 
 Admin console, platform governance, and operational hardening for the xGameFi backend.
