@@ -22,6 +22,7 @@ export const QUEUE_NAMES: QueueName[] = [
 ];
 
 let redis: Redis | null = null;
+let redisSubscriber: Redis | null = null;
 const queueMap = new Map<QueueName, Queue>();
 
 export function getRedis(): Redis {
@@ -29,6 +30,13 @@ export function getRedis(): Redis {
     redis = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
   }
   return redis;
+}
+
+export function getRedisSubscriber(): Redis {
+  if (!redisSubscriber) {
+    redisSubscriber = getRedis().duplicate({ maxRetriesPerRequest: null });
+  }
+  return redisSubscriber;
 }
 
 export function getQueue(name: QueueName): Queue {

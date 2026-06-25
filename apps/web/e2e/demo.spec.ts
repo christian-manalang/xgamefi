@@ -57,6 +57,14 @@ test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page })
 
   page.on("console", (msg) => console.log("[browser]", msg.type(), msg.text()));
   page.on("pageerror", (err) => console.log("[browser error]", err.message));
+  page.on("response", (res) => {
+    if (res.url().includes("/events")) {
+      console.log("[response] events", res.status(), res.url());
+    }
+  });
+  page.on("requestfailed", (req) => {
+    console.log("[requestfailed]", req.url(), req.failure()?.errorText);
+  });
 
   // 1. Create and fund a throwaway testnet player wallet.
   const player = Keypair.random();
@@ -93,9 +101,11 @@ test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page })
     .build();
   tx.sign(player);
   const submitRes = await server.submitTransaction(tx);
+  console.log("[payment] submitted", orderId, submitRes.hash);
   expect(submitRes.successful).toBe(true);
 
   // 6. Assert SSE status reaches PAID / DELIVERED.
   await expect(page.getByText(/PAID/)).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText(/DELIVERED/)).toBeVisible({ timeout: 60_000 });
+  console.log("[test] reached PAID/DELIVERED", orderId);
 });

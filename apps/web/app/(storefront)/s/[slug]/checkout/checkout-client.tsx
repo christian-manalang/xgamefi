@@ -57,7 +57,10 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         QRCode.toDataURL(uri).then(setQr);
 
         es = new EventSource(`/api/v1/orders/${data.order.id}/events`, { withCredentials: true });
+        es.onopen = () => console.log("[checkout] sse open", data.order.id);
+        es.onerror = (err) => console.error("[checkout] sse error", data.order.id, err);
         es.onmessage = (ev) => {
+          console.log("[checkout] sse message", data.order.id, ev.data);
           const payload = JSON.parse(ev.data) as { paymentStatus?: string; deliveryStatus?: string };
           setStatus(`${payload.paymentStatus ?? "PENDING"} / ${payload.deliveryStatus ?? "PENDING"}`);
           if (payload.deliveryStatus === "DELIVERED") es?.close();

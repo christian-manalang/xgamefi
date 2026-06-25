@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import { requirePrincipal } from "@/lib/auth/guards";
 import { prisma } from "@xgamefi/db";
 import { OrderEventsParams } from "@xgamefi/shared/zod/order";
-import { getRedis } from "@xgamefi/shared/queues";
+import { getRedisSubscriber } from "@xgamefi/shared/queues";
 import { createSseStream } from "../../../../../../lib/sse";
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
-  const principal = await requirePrincipal();
+  let principal;
+  try {
+    principal = await requirePrincipal();
+  } catch (e) {
+    console.error("[sse] auth failed", e);
+    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
   const { id } = OrderEventsParams.parse(await ctx.params);
 
   const order = await prisma.order.findUnique({
@@ -22,7 +28,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   }
 
   const channel = `order-events:${id}`;
-  const redis = getRedis();
+  const redis = getRedisSubscriber();
+  console.log(`[sse] subscribe ${channel} for principal ${principal.kind}:${principal.kind === "player" ? principal.playerId : principal.userId}`);
   const stream = createSseStream(channel, redis);
 
   const initial = JSON.stringify({ paymentStatus: order.paymentStatus, deliveryStatus: order.deliveryStatus });
@@ -30,10 +37,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const combined = new ReadableStream<Uint8Array>({
     async start(controller) {
       controller.enqueue(encoder.encode(`data: ${initial}\n\n`));
+      console.log(`[sse] sent initial for ${channel}: ${initial}`);
       const reader = stream.getReader();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        console.log(`[sse] relay ${channel}: ${new TextDecoder().decode(value)}`);
         controller.enqueue(value);
       }
       controller.close();
