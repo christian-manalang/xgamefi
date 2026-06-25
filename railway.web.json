@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @xgamefi/db prisma generate && pnpm --filter @xgamefi/web build"
+  },
+  "deploy": {
+    "preDeployCommand": "pnpm --filter @xgamefi/db prisma migrate deploy && pnpm --filter @xgamefi/db prisma generate",
+    "startCommand": "pnpm --filter @xgamefi/web start",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 30,
+    "restartPolicyType": "ON_FAILURE",
+    "numReplicas": 1
+  }
+}

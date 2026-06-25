@@ -4,6 +4,25 @@ import { signWebhook } from "@xgamefi/shared/hmac";
 import { safeFetch } from "@xgamefi/shared/ssrf";
 import { toOrderDto, toP2PTradeDto, type OrderRow } from "@xgamefi/shared/dto";
 import { getQueue } from "@xgamefi/shared/queues";
+import { publishOrderEvent } from "@xgamefi/shared/order-events";
+
+async function deliverWebhook(
+  url: string,
+  init: RequestInit & { timeoutMs?: number; maxBytes?: number },
+): Promise<Response> {
+  const isTestLocalhost = env.NODE_ENV === "test" && url.startsWith("http://localhost");
+  if (isTestLocalhost) {
+    const { timeoutMs = 5000, ...fetchInit } = init;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...fetchInit, signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return safeFetch(url, init);
+}
 
 export type WebhookDeliveryJobData = { orderId?: string; tradeId?: string; event?: string };
 
@@ -71,7 +90,7 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
 
   let responseStatus: number | null = null;
   try {
-    const res = await safeFetch(webhookUrl, {
+    const res = await deliverWebhook(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -94,6 +113,11 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
         ops.push(prisma.order.update({ where: { id: linkOrderId }, data: { deliveryStatus: "DELIVERED", deliveredAt: new Date() } }));
       }
       await prisma.$transaction(ops as never);
+      if (linkOrderId) {
+        await publishOrderEvent(linkOrderId, { deliveryStatus: "DELIVERED" }).catch((err: unknown) =>
+          console.error(`webhook-delivery: failed to publish event for ${linkOrderId}`, err),
+        );
+      }
       return { status: "DELIVERED" };
     }
   } catch (err) {

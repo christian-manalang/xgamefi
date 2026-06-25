@@ -2,6 +2,16 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Sprint 7 — Admin & Ops (#97–#112)
+
+Admin console, platform governance, and operational hardening for the xGameFi backend.
+
+- **Admin console pages (#108):** `apps/web/app/(admin)/admin/*` — server-side RBAC-gated layout + overview, studios, studio detail, users, global ledger, and platform-settings pages styled to `BRAND.md`; gated by `requireRole("ADMIN")` with `/login` redirect.
+- **Security hardening (#109):** `RATE_LIMITED_PATHS` + rate-limit coverage test for auth/checkout/listing routes; `securityHeaders()` in `apps/web/proxy.ts` applying CSP/HSTS/nosniff/referrer-policy/frame-ancestors, with a coarse admin gate.
+- **Railway deploy config (#110):** `railway.web.json` + `railway.worker.json` with frozen-lockfile builds, Prisma generate, and a release step that runs `prisma migrate deploy` + `prisma generate` (no auto-seed); health check on `/api/health`.
+- **CI e2e headline gate (#111, #119):** `.github/workflows/ci.yml` now ends with the Phase-3 Playwright demo spec; `demo.spec.ts` is self-contained using a friendbot-funded testnet XLM wallet + player auth + `currency=XLM` override, so it passes without real money, custom assets, or repository secrets.
+- **Full-suite green + audit coverage (#112):** `auditCoverage.test.ts` asserts every sensitive admin/studio handler calls `writeAudit` with its action string; the whole monorepo passes lint, typecheck, and 342 tests plus the headline e2e.
+
 ## Sprint 6 — P2P Marketplace (#85–#96)
 
 Player-to-player marketplace on the Phase-3 money core: ownership-verified listings, escrow-pay, a settlement state machine that transfers the item and pays the seller net of fees, auto-refund on failure, and a signed `p2p.trade.completed` webhook — all ledgered.

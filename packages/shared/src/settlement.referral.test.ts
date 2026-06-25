@@ -14,6 +14,7 @@ vi.mock("./stellar", () => ({
     asset: { code: "USDT", issuer: "GISS" },
   })),
 }));
+vi.mock("./order-events", () => ({ publishOrderEvent: vi.fn(async () => {}) }));
 
 import { verifyAndAdvanceOrder } from "./settlement";
 

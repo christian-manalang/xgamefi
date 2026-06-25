@@ -76,3 +76,19 @@ jobs:
 
       - name: Audit (fail on high/critical)
         run: pnpm audit --audit-level high
+
+      - name: Seed demo data (CI only)
+        run: pnpm --filter @xgamefi/db db:seed
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @xgamefi/web exec playwright install --with-deps chromium
+
+      - name: Demo e2e (headline gate)
+        run: |
+          nohup pnpm --filter @xgamefi/worker start > worker.log 2>&1 &
+          sleep 5
+          pnpm --filter @xgamefi/web exec playwright test e2e/demo.spec.ts
+
+      - name: Print worker log on failure
+        if: failure()
+        run: cat worker.log

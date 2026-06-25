@@ -7,10 +7,10 @@ export default async function CheckoutPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ item?: string; ref?: string }>;
+  searchParams: Promise<{ item?: string; ref?: string; currency?: string }>;
 }) {
   const { slug } = await params;
-  const { item: itemId, ref } = await searchParams;
+  const { item: itemId, ref, currency } = await searchParams;
   const [shop, item] = await Promise.all([
     getPublishedShop(slug),
     itemId ? getPublicItem(itemId) : Promise.resolve(null),
@@ -19,7 +19,7 @@ export default async function CheckoutPage({
 
   return (
     <main className="min-h-screen bg-background text-on-background">
-      <CheckoutClient shop={shop} item={item} referralCode={ref ?? null} />
+      <CheckoutClient shop={shop} item={item} referralCode={ref ?? null} currency={currency ?? null} />
     </main>
   );
 }

@@ -421,6 +421,17 @@ model IdempotencyKey {
   createdAt        DateTime @default(now())
 }
 
+model PlatformSetting {
+  id                 String   @id @default("singleton")
+  defaultFeeBps      Int      @default(500)
+  receivingAccount   String
+  payoutSignerPublic String?
+  usdAssetCode       String   @default("USDT")
+  usdAssetIssuer     String?
+  network            String   @default("testnet")
+  updatedAt          DateTime @updatedAt
+}
+
 model AuditLog {
   id          String   @id @default(uuid()) @db.Uuid
   actorType   String

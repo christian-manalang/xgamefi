@@ -28,6 +28,16 @@ function horizonServer(): Horizon.Server {
   return new Horizon.Server(env.STELLAR_HORIZON_URL);
 }
 
+const STELLAR_TEXT_MEMO_MAX_BYTES = 28;
+
+function truncateTextMemo(memo: string): string {
+  const buf = Buffer.from(memo, "utf8");
+  if (buf.length <= STELLAR_TEXT_MEMO_MAX_BYTES) return memo;
+  let end = STELLAR_TEXT_MEMO_MAX_BYTES;
+  while (end > 0 && (buf[end]! & 0xc0) === 0x80) end--;
+  return buf.subarray(0, end).toString("utf8");
+}
+
 export async function buildPaymentXdr(args: {
   destination: string;
   asset: Asset;
@@ -48,7 +58,7 @@ export async function buildPaymentXdr(args: {
         amount: args.amount,
       }),
     )
-    .addMemo(Memo.text(args.memo))
+    .addMemo(Memo.text(truncateTextMemo(args.memo)))
     .setTimeout(180)
     .build();
   return tx.toXDR();
@@ -85,7 +95,7 @@ export async function verifyPayment(
 
   const tx = await horizon.transactions().transaction(args.txHash).call();
   if (!tx.successful) return { ok: false, reason: "transaction not successful" };
-  if (tx.memo !== args.expectedMemo) return { ok: false, reason: "memo mismatch" };
+  if (tx.memo !== truncateTextMemo(args.expectedMemo)) return { ok: false, reason: "memo mismatch" };
 
   const ops = await horizon.operations().forTransaction(args.txHash).call();
   const payment = ops.records.find(
@@ -122,7 +132,7 @@ export async function sendPayment(args: {
       amount: args.amount,
     }),
   );
-  if (args.memo) builder.addMemo(Memo.text(args.memo));
+  if (args.memo) builder.addMemo(Memo.text(truncateTextMemo(args.memo)));
   const tx = builder.setTimeout(180).build();
   tx.sign(signer);
   const res = await server.submitTransaction(tx);

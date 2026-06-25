@@ -29,9 +29,13 @@ const BUYER = "00000000-0000-0000-0000-0000000000b1";
 
 async function wipe() {
   await prisma.ledgerEntry.deleteMany();
+  await prisma.webhookDelivery.deleteMany();
+  await prisma.referral.deleteMany();
+  await prisma.order.deleteMany();
   await prisma.p2PTrade.deleteMany();
   await prisma.itemOwnership.deleteMany();
   await prisma.p2PListing.deleteMany();
+  await prisma.promotion.deleteMany();
   await prisma.item.deleteMany();
   await prisma.player.deleteMany();
   await prisma.studio.deleteMany();

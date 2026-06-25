@@ -11,6 +11,7 @@
     "./stellar": "./src/stellar.ts",
     "./queues": "./src/queues.ts",
     "./idempotency": "./src/idempotency.ts",
+    "./order-events": "./src/order-events.ts",
     "./settlement": "./src/settlement.ts",
     "./promotions": "./src/promotions/index.ts",
     "./auth": "./src/auth/index.ts",
@@ -25,7 +26,14 @@
     "./zod/p2p": "./src/zod/p2p.ts",
     "./zod/promotion": "./src/zod/promotion.ts",
     "./zod/referral": "./src/zod/referral.ts",
-    "./zod/shop": "./src/zod/shop.ts"
+    "./zod/shop": "./src/zod/shop.ts",
+    "./settings": "./src/settings.ts",
+    "./metrics": "./src/metrics.ts",
+    "./dto/admin": "./src/dto/admin.ts",
+    "./zod/admin": "./src/zod/admin.ts",
+    "./apikey": "./src/apikey.ts",
+    "./dto/studioKey": "./src/dto/studioKey.ts",
+    "./audit": "./src/audit.ts"
   },
   "dependencies": {
     "@xgamefi/db": "workspace:*",

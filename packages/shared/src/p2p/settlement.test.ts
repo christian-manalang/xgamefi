@@ -26,6 +26,11 @@ async function wipe() {
   await prisma.p2PTrade.deleteMany();
   await prisma.itemOwnership.deleteMany();
   await prisma.p2PListing.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.promotion.deleteMany();
+  await prisma.shop.deleteMany();
+  await prisma.apiKey.deleteMany();
+  await prisma.webhookDelivery.deleteMany();
   await prisma.item.deleteMany();
   await prisma.player.deleteMany();
   await prisma.studio.deleteMany();

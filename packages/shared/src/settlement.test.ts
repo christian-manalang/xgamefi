@@ -25,6 +25,7 @@ vi.mock("@xgamefi/db", async () => {
 });
 vi.mock("./stellar", () => ({ verifyPayment: mocks.verifyPayment }));
 vi.mock("./queues", () => ({ getQueue: mocks.getQueue }));
+vi.mock("./order-events", () => ({ publishOrderEvent: vi.fn(async () => {}) }));
 
 import { verifyAndAdvanceOrder } from "./settlement";
 

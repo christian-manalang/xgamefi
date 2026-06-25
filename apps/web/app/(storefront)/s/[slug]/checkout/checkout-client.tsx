@@ -20,11 +20,13 @@ type CheckoutClientProps = {
   shop: ShopDto;
   item: ItemDto;
   referralCode: string | null;
+  currency: string | null;
 };
 
-export function CheckoutClient({ shop, item, referralCode }: CheckoutClientProps) {
+export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutClientProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
-  const [status, setStatus] = useState<string>("waiting for quote");
+  const [statusMessage, setStatusMessage] = useState<string>("waiting for quote");
+  const [orderStatus, setOrderStatus] = useState<{ paymentStatus: string; deliveryStatus: string } | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [freighterAvailable, setFreighterAvailable] = useState(false);
 
@@ -34,37 +36,47 @@ export function CheckoutClient({ shop, item, referralCode }: CheckoutClientProps
 
   useEffect(() => {
     let es: EventSource | null = null;
+    const body: Record<string, unknown> = {
+      itemId: item.id,
+      currency: currency ?? item.price.currency,
+    };
+    if (referralCode) body.referralCode = referralCode;
+
     fetch("/api/v1/checkout/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId: item.id, currency: item.price.currency, referralCode }),
+      body: JSON.stringify(body),
     })
       .then((r) => r.json())
       .then((data: Quote) => {
         setQuote(data);
-        setStatus("pending payment");
+        setStatusMessage("pending payment");
+        setOrderStatus({ paymentStatus: "PENDING", deliveryStatus: "PENDING" });
         const assetPart = data.quote.asset.issuer
           ? `&asset_code=${encodeURIComponent(data.quote.asset.code)}&asset_issuer=${encodeURIComponent(data.quote.asset.issuer)}`
           : "";
         const uri = `web+stellar:pay?destination=${encodeURIComponent(data.quote.destination)}&amount=${encodeURIComponent(data.quote.amount)}&memo=${encodeURIComponent(data.quote.memo)}${assetPart}`;
         QRCode.toDataURL(uri).then(setQr);
 
-        es = new EventSource(`/api/v1/orders/${data.order.id}/events`);
+        es = new EventSource(`/api/v1/orders/${data.order.id}/events`, { withCredentials: true });
         es.onmessage = (ev) => {
           const payload = JSON.parse(ev.data) as { paymentStatus?: string; deliveryStatus?: string };
-          setStatus(`${payload.paymentStatus ?? "PENDING"} / ${payload.deliveryStatus ?? "PENDING"}`);
+          setOrderStatus((prev) => {
+            const next = { paymentStatus: prev?.paymentStatus ?? "PENDING", deliveryStatus: prev?.deliveryStatus ?? "PENDING", ...payload };
+            return next;
+          });
           if (payload.deliveryStatus === "DELIVERED") es?.close();
         };
       })
       .catch((err) => {
         console.error("checkout quote failed", err);
-        setStatus("quote failed");
+        setStatusMessage("quote failed");
       });
 
     return () => {
       if (es) es.close();
     };
-  }, [item.id, item.price.currency, referralCode]);
+  }, [item.id, item.price.currency, referralCode, currency]);
 
   async function payWithFreighter() {
     if (!quote) return;
@@ -73,9 +85,13 @@ export function CheckoutClient({ shop, item, referralCode }: CheckoutClientProps
       alert("Signed XDR: " + signed);
     } catch (err) {
       console.error("freighter sign failed", err);
-      setStatus("freighter sign failed");
+      setStatusMessage("freighter sign failed");
     }
   }
+
+  const displayStatus = orderStatus
+    ? `${orderStatus.paymentStatus} / ${orderStatus.deliveryStatus}`
+    : statusMessage;
 
   return (
     <div className="container-max mx-auto px-4 py-12">
@@ -104,8 +120,8 @@ export function CheckoutClient({ shop, item, referralCode }: CheckoutClientProps
               Pay with Freighter
             </button>
           )}
-          <p className="mt-4 text-on-surface" data-order-id={quote?.order.id}>
-            Status: {status}
+          <p className="mt-4 text-on-surface" data-order-id={quote?.order.id} data-testid="payment-status">
+            Status: {displayStatus}
           </p>
         </div>
       </div>

@@ -1,0 +1,89 @@
+import { z } from "zod";
+
+const stellarAddress = z
+  .string()
+  .regex(/^G[A-Z2-7]{55}$/, "invalid Stellar address");
+
+export const AdminSettingsInput = z
+  .object({
+    defaultFeeBps: z.number().int().min(0).max(10000).optional(),
+    receivingAccount: stellarAddress.optional(),
+    payoutSignerPublic: stellarAddress.optional(),
+    usdAssetCode: z.string().min(1).max(12).optional(),
+    usdAssetIssuer: stellarAddress.optional(),
+    network: z.enum(["testnet", "pubnet"]).optional(),
+  })
+  .strict();
+
+export type AdminSettingsInputT = z.infer<typeof AdminSettingsInput>;
+
+export const AdminLedgerQuery = z
+  .object({
+    type: z.string().optional(),
+    studioId: z.string().uuid().optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+    cursor: z.string().uuid().optional(),
+  })
+  .strict();
+
+export type AdminLedgerQueryT = z.infer<typeof AdminLedgerQuery>;
+
+export const StudioOnboardInput = z
+  .object({
+    name: z.string().min(1),
+    slug: z.string().regex(/^[a-z0-9-]+$/),
+    description: z.string().optional(),
+    payoutWalletAddress: stellarAddress.optional(),
+    integrationMode: z.enum(["API_PULL", "WEBHOOK_PUSH"]).default("API_PULL"),
+    apiBaseUrl: z.string().url().optional(),
+  })
+  .strict();
+
+export type StudioOnboardInputT = z.infer<typeof StudioOnboardInput>;
+
+export const StudioPatchInput = z
+  .object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+    brand: z.record(z.any()).optional(),
+    payoutWalletAddress: stellarAddress.optional(),
+    platformFeeBps: z.number().int().min(0).max(10000).optional(),
+    integrationMode: z.enum(["API_PULL", "WEBHOOK_PUSH"]).optional(),
+    apiBaseUrl: z.string().url().optional(),
+    status: z.enum(["ACTIVE", "SUSPENDED", "PENDING"]).optional(),
+  })
+  .strict();
+
+export type StudioPatchInputT = z.infer<typeof StudioPatchInput>;
+
+export const IssueApiKeyInput = z
+  .object({
+    scopes: z.array(z.string()).default(["ingest"]),
+  })
+  .strict();
+
+export type IssueApiKeyInputT = z.infer<typeof IssueApiKeyInput>;
+
+export const WebhookConfigInput = z
+  .object({
+    url: z.string().url(),
+  })
+  .strict();
+
+export type WebhookConfigInputT = z.infer<typeof WebhookConfigInput>;
+
+export const WebhookTestInput = z
+  .object({
+    event: z
+      .enum([
+        "purchase.completed",
+        "purchase.pending",
+        "purchase.failed",
+        "p2p.trade.completed",
+      ])
+      .default("purchase.completed"),
+  })
+  .strict();
+
+export type WebhookTestInputT = z.infer<typeof WebhookTestInput>;
+

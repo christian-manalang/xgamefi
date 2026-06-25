@@ -11,7 +11,7 @@ vi.mock("@xgamefi/db", async () => {
   return { ...actual, prisma: { order: { findUnique: mocks.findUnique } } };
 });
 vi.mock("@xgamefi/shared/queues", () => ({
-  getRedis: () => ({
+  getRedisSubscriber: () => ({
     subscribe: vi.fn().mockResolvedValue("OK"),
     on: vi.fn(),
     off: vi.fn(),

@@ -74,7 +74,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string;
               href={`/s/${slug}/checkout?item=${item.id}`}
               className="block w-full text-center bg-primary-fixed text-on-primary-fixed py-4 font-mono uppercase tracking-[0.1em] text-[12px] hover:opacity-90 transition-opacity"
             >
-              Buy
+              Buy now
             </Link>
 
             {Object.keys(item.metadata).length > 0 && (
