@@ -84,7 +84,7 @@ describe("webhook delivery ops", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data[0].id).toBe("d1");
-    expect(deliveryFindMany.mock.calls[0][0].where.studioId).toBe("s1");
+    expect(deliveryFindMany.mock.calls[0]?.[0].where.studioId).toBe("s1");
   });
 
   it("manual retry re-enqueues the webhook-delivery job and resets state", async () => {

@@ -2,6 +2,12 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Sprint 7 — Admin & Ops (#97–#112)
+
+Admin console, platform governance, and operational hardening for the xGameFi backend.
+
+- **Admin console pages (#108):** `apps/web/app/(admin)/admin/*` — server-side RBAC-gated layout + overview, studios, studio detail, users, global ledger, and platform-settings pages styled to `BRAND.md`; gated by `requireRole("ADMIN")` with `/login` redirect.
+
 ## Sprint 6 — P2P Marketplace (#85–#96)
 
 Player-to-player marketplace on the Phase-3 money core: ownership-verified listings, escrow-pay, a settlement state machine that transfers the item and pays the seller net of fees, auto-refund on failure, and a signed `p2p.trade.completed` webhook — all ledgered.

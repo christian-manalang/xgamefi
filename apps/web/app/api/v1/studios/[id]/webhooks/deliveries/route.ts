@@ -23,7 +23,7 @@ export async function GET(req: Request, { params }: Ctx): Promise<Response> {
     const page = hasMore ? rows.slice(0, q.limit) : rows;
     return Response.json({
       data: page.map(toWebhookDeliveryDto),
-      nextCursor: hasMore ? page[page.length - 1].id : null,
+      nextCursor: hasMore ? (page.at(-1)?.id ?? null) : null,
     });
   } catch (e) {
     return handleError(e);

@@ -11,7 +11,7 @@ function sanitize(meta: Record<string, unknown> | undefined): Record<string, unk
 
 export async function writeAudit(args: {
   actorType: "USER" | "PLAYER" | "ANON";
-  actorUserId?: string;
+  actorUserId?: string | null;
   action: string;
   entityType: string;
   entityId: string;
@@ -21,7 +21,7 @@ export async function writeAudit(args: {
   await prisma.auditLog.create({
     data: {
       actorType: args.actorType,
-      actorUserId: args.actorUserId,
+      actorUserId: args.actorUserId ?? null,
       action: args.action,
       entityType: args.entityType,
       entityId: args.entityId,

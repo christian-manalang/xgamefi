@@ -74,7 +74,7 @@ describe("PATCH /studios/:id/webhook", () => {
     expect(body.data.webhookUrl).toBe("https://hooks.gridlock.gg/x");
     expect(typeof body.data.secret).toBe("string");
     expect(body.data.secret.startsWith("whsec_")).toBe(true);
-    const persisted = studioUpdate.mock.calls[0][0].data;
+    const persisted = studioUpdate.mock.calls[0]?.[0].data;
     expect(persisted.webhookSecretHash).not.toBe(body.data.secret);
     expect(persisted).not.toHaveProperty("webhookSecret");
     expect(writeAudit).toHaveBeenCalledWith(expect.objectContaining({ action: "webhook.config" }));

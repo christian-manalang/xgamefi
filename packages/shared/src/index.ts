@@ -7,6 +7,7 @@ export * from "./settings";
 export * from "./metrics";
 export * from "./audit";
 export * from "./apikey";
+export { assertPublicUrl } from "./ssrf";
 export * from "./zod";
 export {
   toAdminSettingsDto,

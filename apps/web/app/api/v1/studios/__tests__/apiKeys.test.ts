@@ -68,7 +68,7 @@ describe("api key endpoints", () => {
     const body = await res.json();
     expect(typeof body.data.key).toBe("string");
     expect(body.data.key.startsWith("xgk_")).toBe(true);
-    const persisted = apiKeyCreate.mock.calls[0][0].data;
+    const persisted = apiKeyCreate.mock.calls[0]?.[0].data;
     expect(persisted.hashedKey).toBeTypeOf("string");
     expect(persisted.hashedKey).not.toBe(body.data.key);
     expect(persisted).not.toHaveProperty("rawKey");
