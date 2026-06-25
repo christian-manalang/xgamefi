@@ -28,3 +28,31 @@ export const AdminLedgerQuery = z
 
 export type AdminLedgerQueryT = z.infer<typeof AdminLedgerQuery>;
 
+export const StudioOnboardInput = z
+  .object({
+    name: z.string().min(1),
+    slug: z.string().regex(/^[a-z0-9-]+$/),
+    description: z.string().optional(),
+    payoutWalletAddress: stellarAddress.optional(),
+    integrationMode: z.enum(["API_PULL", "WEBHOOK_PUSH"]).default("API_PULL"),
+    apiBaseUrl: z.string().url().optional(),
+  })
+  .strict();
+
+export type StudioOnboardInputT = z.infer<typeof StudioOnboardInput>;
+
+export const StudioPatchInput = z
+  .object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+    brand: z.record(z.any()).optional(),
+    payoutWalletAddress: stellarAddress.optional(),
+    platformFeeBps: z.number().int().min(0).max(10000).optional(),
+    integrationMode: z.enum(["API_PULL", "WEBHOOK_PUSH"]).optional(),
+    apiBaseUrl: z.string().url().optional(),
+    status: z.enum(["ACTIVE", "SUSPENDED", "PENDING"]).optional(),
+  })
+  .strict();
+
+export type StudioPatchInputT = z.infer<typeof StudioPatchInput>;
+
