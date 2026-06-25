@@ -46,8 +46,13 @@ export async function stellarWatcherProcessor(job: { data: StellarWatcherJobData
 
   const response = await account.call();
   for (const record of response.records) {
-    payments.push({ memo: (record as { transaction_memo?: string }).transaction_memo, txHash: record.transaction_hash });
     nextCursor = record.paging_token;
+    try {
+      const tx = await server.transactions().transaction(record.transaction_hash).call();
+      payments.push({ memo: tx.memo, txHash: tx.hash });
+    } catch (err) {
+      console.error(`stellar-watcher: failed to fetch transaction ${record.transaction_hash}`, err);
+    }
   }
 
   const pendingOrders = await prisma.order.findMany({
