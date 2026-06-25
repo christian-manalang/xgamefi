@@ -6,7 +6,7 @@ test("Phase 3 demo: scan QR, pay 1 USDT, see delivered via SSE", async ({ page }
 
   // 1. Load the storefront item page
   await page.goto("/s/gridlock");
-  await page.getByText("Sword Skin").click();
+  await page.locator("article", { hasText: "Sword Skin" }).getByRole("button", { name: /quick view/i }).click();
   await page.getByRole("link", { name: /buy now/i }).click();
 
   // 2. Wait for checkout page and quote
