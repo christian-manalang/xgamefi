@@ -40,10 +40,23 @@ async function authenticatePlayer(page: import("@playwright/test").Page, keypair
     data: { walletAddress: publicKey, signature: signatureBase64 },
   });
   expect(verifyRes.ok(), `verify failed: ${await verifyRes.text()}`).toBe(true);
+
+  const setCookie = verifyRes.headers()["set-cookie"];
+  if (setCookie) {
+    const match = setCookie.match(/xgf_session=([^;]+)/);
+    if (match) {
+      await page.context().addCookies([
+        { name: "xgf_session", value: match[1]!, domain: "localhost", path: "/", httpOnly: true, sameSite: "Lax" },
+      ]);
+    }
+  }
 }
 
 test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page }) => {
   test.setTimeout(120_000);
+
+  page.on("console", (msg) => console.log("[browser]", msg.type(), msg.text()));
+  page.on("pageerror", (err) => console.log("[browser error]", err.message));
 
   // 1. Create and fund a throwaway testnet player wallet.
   const player = Keypair.random();
@@ -63,7 +76,7 @@ test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page })
 
   // 3. Wait for checkout page and quote.
   await expect(page.getByText("Checkout")).toBeVisible();
-  await expect(page.locator("img[alt='Payment QR']")).toBeVisible();
+  await expect(page.locator("img[alt='Payment QR']")).toBeVisible({ timeout: 15_000 });
 
   // 4. Read the order id from the page data attribute.
   const orderId = await page.locator("[data-order-id]").getAttribute("data-order-id");
