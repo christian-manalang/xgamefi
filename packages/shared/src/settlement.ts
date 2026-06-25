@@ -2,6 +2,7 @@ import { prisma, Prisma } from "@xgamefi/db";
 import { env } from "@xgamefi/config/env";
 import { verifyPayment, type Asset } from "./stellar";
 import { getQueue } from "./queues";
+import { publishOrderEvent } from "./order-events";
 
 export type VerifyAdvanceResult =
   | { status: "PAID" }
@@ -12,7 +13,7 @@ export async function verifyAndAdvanceOrder(args: {
   orderId: string;
   txHash: string;
 }): Promise<VerifyAdvanceResult> {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: args.orderId },
       include: { item: true, studio: true },
@@ -20,7 +21,7 @@ export async function verifyAndAdvanceOrder(args: {
     if (!order) throw new Error(`verifyAndAdvanceOrder: order ${args.orderId} not found`);
 
     if (order.paymentStatus === "PAID") {
-      return { status: "ALREADY" };
+      return { status: "ALREADY" } as VerifyAdvanceResult;
     }
 
     const expectedAsset: Asset =
@@ -37,12 +38,12 @@ export async function verifyAndAdvanceOrder(args: {
     });
 
     if (!verify.ok) {
-      return { status: "REJECTED", reason: verify.reason };
+      return { status: "REJECTED", reason: verify.reason } as VerifyAdvanceResult;
     }
 
     const existing = await tx.order.findUnique({ where: { stellarTxHash: args.txHash } });
     if (existing && existing.id !== order.id) {
-      return { status: "REJECTED", reason: "txHash already used" };
+      return { status: "REJECTED", reason: "txHash already used" } as VerifyAdvanceResult;
     }
 
     const now = new Date();
@@ -105,6 +106,14 @@ export async function verifyAndAdvanceOrder(args: {
       }
     }
 
-    return { status: "PAID" };
+    return { status: "PAID" } as VerifyAdvanceResult;
   });
+
+  if (result.status === "PAID") {
+    await publishOrderEvent(args.orderId, { paymentStatus: "PAID" }).catch((err) =>
+      console.error(`verifyAndAdvanceOrder: failed to publish event for ${args.orderId}`, err),
+    );
+  }
+
+  return result;
 }

@@ -4,6 +4,7 @@ import { signWebhook } from "@xgamefi/shared/hmac";
 import { safeFetch } from "@xgamefi/shared/ssrf";
 import { toOrderDto, toP2PTradeDto, type OrderRow } from "@xgamefi/shared/dto";
 import { getQueue } from "@xgamefi/shared/queues";
+import { publishOrderEvent } from "@xgamefi/shared/order-events";
 
 async function deliverWebhook(
   url: string,
@@ -112,6 +113,11 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
         ops.push(prisma.order.update({ where: { id: linkOrderId }, data: { deliveryStatus: "DELIVERED", deliveredAt: new Date() } }));
       }
       await prisma.$transaction(ops as never);
+      if (linkOrderId) {
+        await publishOrderEvent(linkOrderId, { deliveryStatus: "DELIVERED" }).catch((err: unknown) =>
+          console.error(`webhook-delivery: failed to publish event for ${linkOrderId}`, err),
+        );
+      }
       return { status: "DELIVERED" };
     }
   } catch (err) {

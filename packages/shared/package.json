@@ -11,6 +11,7 @@
     "./stellar": "./src/stellar.ts",
     "./queues": "./src/queues.ts",
     "./idempotency": "./src/idempotency.ts",
+    "./order-events": "./src/order-events.ts",
     "./settlement": "./src/settlement.ts",
     "./promotions": "./src/promotions/index.ts",
     "./auth": "./src/auth/index.ts",

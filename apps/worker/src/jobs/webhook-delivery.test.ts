@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@xgamefi/shared/ssrf", () => ({ safeFetch: mocks.safeFetch }));
 vi.mock("@xgamefi/shared/hmac", () => ({ signWebhook: mocks.signWebhook }));
 vi.mock("@xgamefi/shared/queues", () => ({ registerWorker: vi.fn(), getQueue: mocks.getQueue }));
+vi.mock("@xgamefi/shared/order-events", () => ({ publishOrderEvent: vi.fn(async () => {}) }));
 vi.mock("@xgamefi/shared/dto", () => ({ toOrderDto: mocks.toOrderDto, toP2PTradeDto: mocks.toP2PTradeDto }));
 vi.mock("@xgamefi/db", async () => {
   const actual = await vi.importActual<typeof import("@xgamefi/db")>("@xgamefi/db");
