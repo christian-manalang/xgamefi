@@ -17,6 +17,9 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source and generate the Prisma client.
 COPY . .
+# Re-run install after the full workspace source is present so pnpm's isolated
+# linker creates correct symlinks for workspace package dependencies.
+RUN pnpm install --frozen-lockfile
 RUN pnpm db:generate
 
 # ---------------------------------------------------------------------------

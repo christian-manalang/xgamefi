@@ -15,10 +15,10 @@
     "@prisma/client": "^7.8.0",
     "@prisma/adapter-pg": "^7.8.0",
     "pg": "^8.13.0",
+    "prisma": "^7.8.0",
     "@xgamefi/config": "workspace:*"
   },
   "devDependencies": {
-    "prisma": "^7.8.0",
     "tsx": "^4.19.0",
     "argon2": "^0.41.0",
     "@types/pg": "^8.11.0",
