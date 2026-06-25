@@ -22,19 +22,20 @@ async function fundViaFriendbot(page: import("@playwright/test").Page, publicKey
 
 async function authenticatePlayer(page: import("@playwright/test").Page, keypair: Keypair) {
   const publicKey = keypair.publicKey();
+  const headers = { "Content-Type": "application/json", Origin: "http://localhost:3000" };
   const challengeRes = await page.request.post("/api/v1/auth/wallet/challenge", {
-    headers: { "Content-Type": "application/json" },
+    headers,
     data: { walletAddress: publicKey },
   });
-  expect(challengeRes.ok()).toBe(true);
+  expect(challengeRes.ok(), `challenge failed: ${await challengeRes.text()}`).toBe(true);
   const { nonce } = await challengeRes.json() as { nonce: string };
 
   const signature = keypair.sign(Buffer.from(challengeMessage(publicKey, nonce), "utf8"));
   const verifyRes = await page.request.post("/api/v1/auth/wallet/verify", {
-    headers: { "Content-Type": "application/json" },
+    headers,
     data: { walletAddress: publicKey, signature: signature.toString("base64") },
   });
-  expect(verifyRes.ok()).toBe(true);
+  expect(verifyRes.ok(), `verify failed: ${await verifyRes.text()}`).toBe(true);
 }
 
 test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page }) => {
