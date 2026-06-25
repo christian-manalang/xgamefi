@@ -20,9 +20,10 @@ type CheckoutClientProps = {
   shop: ShopDto;
   item: ItemDto;
   referralCode: string | null;
+  currency: string | null;
 };
 
-export function CheckoutClient({ shop, item, referralCode }: CheckoutClientProps) {
+export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutClientProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [status, setStatus] = useState<string>("waiting for quote");
   const [qr, setQr] = useState<string | null>(null);
@@ -37,7 +38,7 @@ export function CheckoutClient({ shop, item, referralCode }: CheckoutClientProps
     fetch("/api/v1/checkout/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId: item.id, currency: item.price.currency, referralCode }),
+      body: JSON.stringify({ itemId: item.id, currency: currency ?? item.price.currency, referralCode }),
     })
       .then((r) => r.json())
       .then((data: Quote) => {
@@ -64,7 +65,7 @@ export function CheckoutClient({ shop, item, referralCode }: CheckoutClientProps
     return () => {
       if (es) es.close();
     };
-  }, [item.id, item.price.currency, referralCode]);
+  }, [item.id, item.price.currency, referralCode, currency]);
 
   async function payWithFreighter() {
     if (!quote) return;
