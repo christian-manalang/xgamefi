@@ -7,8 +7,21 @@ import { verifyAndAdvanceOrder } from "@xgamefi/shared/settlement";
 import { withIdempotency, type RedisLike } from "@xgamefi/shared/idempotency";
 import { getRedis } from "@xgamefi/shared/queues";
 import { toOrderDto } from "@xgamefi/shared/dto";
+import { rateLimit } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/http";
 
 export async function POST(req: Request): Promise<Response> {
+  const ip = getClientIp(req);
+  const rl = await rateLimit({
+    scope: "checkout:submit",
+    identifier: ip,
+    limit: 20,
+    windowSec: 60,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "RATE_LIMITED" }, { status: 429 });
+  }
+
   const principal = await requirePrincipal();
   if (principal.kind !== "player") {
     return NextResponse.json({ error: "player wallet required" }, { status: 403 });
