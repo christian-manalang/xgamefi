@@ -41,10 +41,11 @@ export async function stellarWatcherProcessor(job: { data: StellarWatcherJobData
   const cursor = job.data.cursor ?? (await redis.get(CURSOR_KEY)) ?? undefined;
   if (cursor) account.cursor(cursor);
 
+  const response = await account.call();
+  console.log(`stellar-watcher: fetched ${response.records.length} payment records, cursor=${cursor ?? "none"}`);
   const payments: { memo?: string; txHash?: string }[] = [];
   let nextCursor: string | undefined;
 
-  const response = await account.call();
   for (const record of response.records) {
     nextCursor = record.paging_token;
     try {
@@ -59,12 +60,16 @@ export async function stellarWatcherProcessor(job: { data: StellarWatcherJobData
     where: { paymentStatus: "PENDING" },
     select: { id: true },
   });
+  console.log(`stellar-watcher: ${pendingOrders.length} pending orders, ${payments.length} payments with memos`);
 
   const matched = matchAndAdvancePayments(pendingOrders, payments);
+  console.log(`stellar-watcher: matched ${matched.length} orders`);
   let processed = 0;
   for (const m of matched) {
     try {
+      console.log(`stellar-watcher: advancing order ${m.id} tx=${m.txHash}`);
       const res = await verifyAndAdvanceOrder({ orderId: m.id, txHash: m.txHash });
+      console.log(`stellar-watcher: advance result ${res.status}`);
       if (res.status === "PAID" || res.status === "ALREADY") processed++;
     } catch (err) {
       console.error(`stellar-watcher: failed to advance ${m.id}`, err);
