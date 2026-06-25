@@ -45,8 +45,6 @@ async function authenticatePlayer(page: import("@playwright/test").Page, keypair
 test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page }) => {
   test.setTimeout(120_000);
 
-  page.on("console", (msg) => console.log("[browser]", msg.type(), msg.text()));
-
   // 1. Create and fund a throwaway testnet player wallet.
   const player = Keypair.random();
   await page.goto("/s/gridlock");
@@ -61,12 +59,6 @@ test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page })
   const swordSkin = items.find((i) => i.name === "Sword Skin");
   expect(swordSkin).toBeDefined();
 
-  const quoteRes = await page.request.post("/api/v1/checkout/quote", {
-    headers: { "Content-Type": "application/json", Origin: "http://localhost:3000" },
-    data: { itemId: swordSkin!.id, currency: "XLM" },
-  });
-  console.log("quote direct", quoteRes.status(), await quoteRes.text());
-
   await page.goto(`/s/gridlock/checkout?item=${swordSkin!.id}&currency=XLM`);
 
   // 3. Wait for checkout page and quote.
@@ -78,11 +70,12 @@ test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page })
   expect(orderId).toMatch(/^[0-9a-f-]{36}$/);
 
   // 5. Submit a testnet XLM payment programmatically.
+  const memoText = orderId!.slice(0, 28);
   const server = new Horizon.Server(process.env.STELLAR_HORIZON_URL!);
   const account = await server.loadAccount(player.publicKey());
   const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase: Networks.TESTNET })
     .addOperation(Operation.payment({ destination: process.env.STELLAR_RECEIVING_ACCOUNT!, asset: Asset.native(), amount: "1.0000000" }))
-    .addMemo(Memo.text(orderId!))
+    .addMemo(Memo.text(memoText))
     .setTimeout(180)
     .build();
   tx.sign(player);

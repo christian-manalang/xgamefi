@@ -80,6 +80,9 @@ jobs:
       - name: Seed demo data (CI only)
         run: pnpm --filter @xgamefi/db db:seed
 
+      - name: Start worker
+        run: nohup pnpm --filter @xgamefi/worker start > worker.log 2>&1 &
+
       - name: Install Playwright browsers
         run: pnpm --filter @xgamefi/web exec playwright install --with-deps chromium
 
