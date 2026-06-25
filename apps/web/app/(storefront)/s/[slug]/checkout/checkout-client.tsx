@@ -25,13 +25,10 @@ type CheckoutClientProps = {
 
 export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutClientProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
-  const [status, setStatus] = useState<string>("waiting for quote");
+  const [statusMessage, setStatusMessage] = useState<string>("waiting for quote");
+  const [orderStatus, setOrderStatus] = useState<{ paymentStatus: string; deliveryStatus: string } | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [freighterAvailable, setFreighterAvailable] = useState(false);
-
-  useEffect(() => {
-    console.log("[checkout] render status", status);
-  }, [status]);
 
   useEffect(() => {
     isConnected().then((r) => setFreighterAvailable(r.isConnected)).catch(() => setFreighterAvailable(false));
@@ -53,7 +50,8 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       .then((r) => r.json())
       .then((data: Quote) => {
         setQuote(data);
-        setStatus("pending payment");
+        setStatusMessage("pending payment");
+        setOrderStatus({ paymentStatus: "PENDING", deliveryStatus: "PENDING" });
         const assetPart = data.quote.asset.issuer
           ? `&asset_code=${encodeURIComponent(data.quote.asset.code)}&asset_issuer=${encodeURIComponent(data.quote.asset.issuer)}`
           : "";
@@ -66,13 +64,16 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         es.onmessage = (ev) => {
           console.log("[checkout] sse message", data.order.id, ev.data);
           const payload = JSON.parse(ev.data) as { paymentStatus?: string; deliveryStatus?: string };
-          setStatus(`${payload.paymentStatus ?? "PENDING"} / ${payload.deliveryStatus ?? "PENDING"}`);
+          setOrderStatus((prev) => {
+            const next = { paymentStatus: prev?.paymentStatus ?? "PENDING", deliveryStatus: prev?.deliveryStatus ?? "PENDING", ...payload };
+            return next;
+          });
           if (payload.deliveryStatus === "DELIVERED") es?.close();
         };
       })
       .catch((err) => {
         console.error("checkout quote failed", err);
-        setStatus("quote failed");
+        setStatusMessage("quote failed");
       });
 
     return () => {
@@ -87,9 +88,13 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       alert("Signed XDR: " + signed);
     } catch (err) {
       console.error("freighter sign failed", err);
-      setStatus("freighter sign failed");
+      setStatusMessage("freighter sign failed");
     }
   }
+
+  const displayStatus = orderStatus
+    ? `${orderStatus.paymentStatus} / ${orderStatus.deliveryStatus}`
+    : statusMessage;
 
   return (
     <div className="container-max mx-auto px-4 py-12">
@@ -119,7 +124,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
             </button>
           )}
           <p className="mt-4 text-on-surface" data-order-id={quote?.order.id} data-testid="payment-status">
-            Status: {status}
+            Status: {displayStatus}
           </p>
         </div>
       </div>
