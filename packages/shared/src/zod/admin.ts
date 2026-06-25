@@ -72,3 +72,18 @@ export const WebhookConfigInput = z
 
 export type WebhookConfigInputT = z.infer<typeof WebhookConfigInput>;
 
+export const WebhookTestInput = z
+  .object({
+    event: z
+      .enum([
+        "purchase.completed",
+        "purchase.pending",
+        "purchase.failed",
+        "p2p.trade.completed",
+      ])
+      .default("purchase.completed"),
+  })
+  .strict();
+
+export type WebhookTestInputT = z.infer<typeof WebhookTestInput>;
+

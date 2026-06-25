@@ -24,3 +24,5 @@ export type {
 } from "./dto/admin";
 export { toApiKeyDto } from "./dto/studioKey";
 export type { ApiKeyDto } from "./dto/studioKey";
+export { toWebhookDeliveryDto } from "./dto/webhookDelivery";
+export type { WebhookDeliveryDto } from "./dto/webhookDelivery";
