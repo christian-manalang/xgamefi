@@ -8,6 +8,7 @@ Admin console, platform governance, and operational hardening for the xGameFi ba
 
 - **Admin console pages (#108):** `apps/web/app/(admin)/admin/*` — server-side RBAC-gated layout + overview, studios, studio detail, users, global ledger, and platform-settings pages styled to `BRAND.md`; gated by `requireRole("ADMIN")` with `/login` redirect.
 - **Security hardening (#109):** `RATE_LIMITED_PATHS` + rate-limit coverage test for auth/checkout/listing routes; `securityHeaders()` in `apps/web/proxy.ts` applying CSP/HSTS/nosniff/referrer-policy/frame-ancestors, with a coarse admin gate.
+- **Railway deploy config (#110):** `railway.web.json` + `railway.worker.json` with frozen-lockfile builds, Prisma generate, and a release step that runs `prisma migrate deploy` + `prisma generate` (no auto-seed); health check on `/api/health`.
 
 ## Sprint 6 — P2P Marketplace (#85–#96)
 
