@@ -56,7 +56,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         const uri = `web+stellar:pay?destination=${encodeURIComponent(data.quote.destination)}&amount=${encodeURIComponent(data.quote.amount)}&memo=${encodeURIComponent(data.quote.memo)}${assetPart}`;
         QRCode.toDataURL(uri).then(setQr);
 
-        es = new EventSource(`/api/v1/orders/${data.order.id}/events`);
+        es = new EventSource(`/api/v1/orders/${data.order.id}/events`, { withCredentials: true });
         es.onmessage = (ev) => {
           const payload = JSON.parse(ev.data) as { paymentStatus?: string; deliveryStatus?: string };
           setStatus(`${payload.paymentStatus ?? "PENDING"} / ${payload.deliveryStatus ?? "PENDING"}`);
