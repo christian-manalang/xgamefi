@@ -28,12 +28,12 @@ async function authenticatePlayer(page: import("@playwright/test").Page, keypair
     data: { walletAddress: publicKey },
   });
   expect(challengeRes.ok(), `challenge failed: ${await challengeRes.text()}`).toBe(true);
-  const { nonce } = await challengeRes.json() as { nonce: string };
+  const { data } = await challengeRes.json() as { data: { nonce: string } };
+  const { nonce } = data;
 
   const message = challengeMessage(publicKey, nonce);
   const signature = keypair.sign(Buffer.from(message, "utf8"));
   const signatureBase64 = signature.toString("base64");
-  console.log({ publicKey, nonce, message, signatureBase64, sigLen: signature.length });
 
   const verifyRes = await page.request.post("/api/v1/auth/wallet/verify", {
     headers,
