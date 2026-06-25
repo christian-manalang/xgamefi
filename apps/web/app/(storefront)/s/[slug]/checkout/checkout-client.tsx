@@ -35,10 +35,16 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
 
   useEffect(() => {
     let es: EventSource | null = null;
+    const body: Record<string, unknown> = {
+      itemId: item.id,
+      currency: currency ?? item.price.currency,
+    };
+    if (referralCode) body.referralCode = referralCode;
+
     fetch("/api/v1/checkout/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemId: item.id, currency: currency ?? item.price.currency, referralCode }),
+      body: JSON.stringify(body),
     })
       .then((r) => r.json())
       .then((data: Quote) => {
