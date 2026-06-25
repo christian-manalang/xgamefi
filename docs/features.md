@@ -10,6 +10,7 @@ Admin console, platform governance, and operational hardening for the xGameFi ba
 - **Security hardening (#109):** `RATE_LIMITED_PATHS` + rate-limit coverage test for auth/checkout/listing routes; `securityHeaders()` in `apps/web/proxy.ts` applying CSP/HSTS/nosniff/referrer-policy/frame-ancestors, with a coarse admin gate.
 - **Railway deploy config (#110):** `railway.web.json` + `railway.worker.json` with frozen-lockfile builds, Prisma generate, and a release step that runs `prisma migrate deploy` + `prisma generate` (no auto-seed); health check on `/api/health`.
 - **CI e2e headline gate (#111):** `.github/workflows/ci.yml` now ends with the Phase-3 Playwright demo spec after lint, typecheck, test, drift check, and audit.
+- **Full-suite green + audit coverage (#112):** `auditCoverage.test.ts` asserts every sensitive admin/studio handler calls `writeAudit` with its action string; the whole monorepo passes lint, typecheck, and 342 tests.
 
 ## Sprint 6 — P2P Marketplace (#85–#96)
 
