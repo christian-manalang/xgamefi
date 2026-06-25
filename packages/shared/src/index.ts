@@ -6,6 +6,7 @@ export * from "./settlement";
 export * from "./settings";
 export * from "./metrics";
 export * from "./audit";
+export * from "./apikey";
 export * from "./zod";
 export {
   toAdminSettingsDto,
@@ -21,3 +22,5 @@ export type {
   AdminStudioDto,
   AdminUserDto,
 } from "./dto/admin";
+export { toApiKeyDto } from "./dto/studioKey";
+export type { ApiKeyDto } from "./dto/studioKey";

@@ -56,3 +56,11 @@ export const StudioPatchInput = z
 
 export type StudioPatchInputT = z.infer<typeof StudioPatchInput>;
 
+export const IssueApiKeyInput = z
+  .object({
+    scopes: z.array(z.string()).default(["ingest"]),
+  })
+  .strict();
+
+export type IssueApiKeyInputT = z.infer<typeof IssueApiKeyInput>;
+
