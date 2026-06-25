@@ -45,6 +45,8 @@ async function authenticatePlayer(page: import("@playwright/test").Page, keypair
 test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page }) => {
   test.setTimeout(120_000);
 
+  page.on("console", (msg) => console.log("[browser]", msg.type(), msg.text()));
+
   // 1. Create and fund a throwaway testnet player wallet.
   const player = Keypair.random();
   await page.goto("/s/gridlock");
@@ -58,6 +60,13 @@ test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page })
   const { items } = await itemsRes.json() as { items: Array<{ id: string; name: string }> };
   const swordSkin = items.find((i) => i.name === "Sword Skin");
   expect(swordSkin).toBeDefined();
+
+  const quoteRes = await page.request.post("/api/v1/checkout/quote", {
+    headers: { "Content-Type": "application/json", Origin: "http://localhost:3000" },
+    data: { itemId: swordSkin!.id, currency: "XLM" },
+  });
+  console.log("quote direct", quoteRes.status(), await quoteRes.text());
+
   await page.goto(`/s/gridlock/checkout?item=${swordSkin!.id}&currency=XLM`);
 
   // 3. Wait for checkout page and quote.
