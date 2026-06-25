@@ -9,15 +9,25 @@ const POLL_LIMIT = 200;
 
 export type StellarWatcherJobData = { cursor?: string };
 
+const STELLAR_TEXT_MEMO_MAX_BYTES = 28;
+
+function truncateTextMemo(memo: string): string {
+  const buf = Buffer.from(memo, "utf8");
+  if (buf.length <= STELLAR_TEXT_MEMO_MAX_BYTES) return memo;
+  let end = STELLAR_TEXT_MEMO_MAX_BYTES;
+  while (end > 0 && (buf[end]! & 0xc0) === 0x80) end--;
+  return buf.subarray(0, end).toString("utf8");
+}
+
 export function matchAndAdvancePayments(
   orders: { id: string }[],
   payments: { memo?: string; txHash?: string }[],
 ): { id: string; txHash: string }[] {
-  const pendingIds = new Set(orders.map((o) => o.id));
+  const pendingIds = new Map(orders.map((o) => [truncateTextMemo(o.id), o.id]));
   const matched: { id: string; txHash: string }[] = [];
   for (const p of payments) {
     if (p.memo && pendingIds.has(p.memo) && p.txHash) {
-      matched.push({ id: p.memo, txHash: p.txHash });
+      matched.push({ id: pendingIds.get(p.memo)!, txHash: p.txHash });
     }
   }
   return matched;
