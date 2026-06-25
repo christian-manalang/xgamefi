@@ -7,8 +7,8 @@ import { SESSION_COOKIE } from "./lib/auth/session";
 export function securityHeaders(): Record<string, string> {
   return {
     "Content-Security-Policy":
-      "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; " +
-      "script-src 'self'; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'",
+      "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'",
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
