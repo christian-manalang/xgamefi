@@ -4,6 +4,19 @@ export * from "./idempotency";
 export * from "./queues";
 export * from "./settlement";
 export * from "./settings";
+export * from "./metrics";
 export * from "./zod";
-export { toAdminSettingsDto } from "./dto/admin";
-export type { AdminSettingsDto } from "./dto/admin";
+export {
+  toAdminSettingsDto,
+  toAdminMetricsDto,
+  toAdminLedgerEntryDto,
+  toAdminStudioDto,
+  toAdminUserDto,
+} from "./dto/admin";
+export type {
+  AdminSettingsDto,
+  AdminMetricsDto,
+  AdminLedgerEntryDto,
+  AdminStudioDto,
+  AdminUserDto,
+} from "./dto/admin";
