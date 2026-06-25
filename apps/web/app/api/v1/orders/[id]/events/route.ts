@@ -29,7 +29,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
   const channel = `order-events:${id}`;
   const redis = getRedisSubscriber();
-  console.log(`[sse] subscribe ${channel} for principal ${principal.kind}:${principal.kind === "player" ? principal.playerId : principal.userId}`);
   const stream = createSseStream(channel, redis);
 
   const initial = JSON.stringify({ paymentStatus: order.paymentStatus, deliveryStatus: order.deliveryStatus });
@@ -37,12 +36,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const combined = new ReadableStream<Uint8Array>({
     async start(controller) {
       controller.enqueue(encoder.encode(`data: ${initial}\n\n`));
-      console.log(`[sse] sent initial for ${channel}: ${initial}`);
       const reader = stream.getReader();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        console.log(`[sse] relay ${channel}: ${new TextDecoder().decode(value)}`);
         controller.enqueue(value);
       }
       controller.close();
