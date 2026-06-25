@@ -30,6 +30,10 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
   const [freighterAvailable, setFreighterAvailable] = useState(false);
 
   useEffect(() => {
+    console.log("[checkout] render status", status);
+  }, [status]);
+
+  useEffect(() => {
     isConnected().then((r) => setFreighterAvailable(r.isConnected)).catch(() => setFreighterAvailable(false));
   }, []);
 
@@ -114,7 +118,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
               Pay with Freighter
             </button>
           )}
-          <p className="mt-4 text-on-surface" data-order-id={quote?.order.id}>
+          <p className="mt-4 text-on-surface" data-order-id={quote?.order.id} data-testid="payment-status">
             Status: {status}
           </p>
         </div>
