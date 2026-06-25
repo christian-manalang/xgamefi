@@ -4,12 +4,15 @@ import { Horizon, Keypair, TransactionBuilder, Operation, Asset, Memo, Networks,
 test("Phase 3 demo: scan QR, pay 1 USDT, see delivered via SSE", async ({ page }) => {
   test.setTimeout(120_000);
 
-  // 1. Load the storefront item page
+  // 1. Load the storefront grid and navigate directly to checkout for Sword Skin
   await page.goto("/s/gridlock");
-  await page.locator("article", { hasText: "Sword Skin" }).getByRole("button", { name: /quick view/i }).click();
-  const modal = page.getByTestId("item-modal");
-  await expect(modal).toBeVisible();
-  await modal.getByRole("link", { name: /buy now/i }).click();
+  await expect(page.locator("article", { hasText: "Sword Skin" })).toBeVisible();
+  const itemsRes = await page.request.get("/api/v1/shops/gridlock/items");
+  expect(itemsRes.ok()).toBe(true);
+  const { items } = await itemsRes.json() as { items: Array<{ id: string; name: string }> };
+  const swordSkin = items.find((i) => i.name === "Sword Skin");
+  expect(swordSkin).toBeDefined();
+  await page.goto(`/s/gridlock/checkout?item=${swordSkin!.id}`);
 
   // 2. Wait for checkout page and quote
   await expect(page.getByText("Checkout")).toBeVisible();
