@@ -64,3 +64,11 @@ export const IssueApiKeyInput = z
 
 export type IssueApiKeyInputT = z.infer<typeof IssueApiKeyInput>;
 
+export const WebhookConfigInput = z
+  .object({
+    url: z.string().url(),
+  })
+  .strict();
+
+export type WebhookConfigInputT = z.infer<typeof WebhookConfigInput>;
+

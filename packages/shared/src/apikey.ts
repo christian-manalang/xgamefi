@@ -27,6 +27,6 @@ export function verifyApiKey(raw: string, hashedKey: string): boolean {
 }
 
 export function generateWebhookSecret(): { raw: string; hash: string } {
-  const raw = "xgw_" + randomBytes(32).toString("base64url");
+  const raw = "whsec_" + randomBytes(32).toString("base64url");
   return { raw, hash: hashApiKey(raw) };
 }
