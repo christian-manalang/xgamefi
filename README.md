@@ -18,6 +18,29 @@ A pnpm monorepo. Two runtime apps over three shared packages:
 
 All money/trust-boundary logic (fee math, payment verification, HMAC, SSRF) lives in `packages/shared` and is written tests-first.
 
+## Pages
+
+| Route | Description |
+| --- | --- |
+| `/` | Landing page |
+| `/login` | Authentication |
+| `/admin` | Admin dashboard |
+| `/admin/users` | User management |
+| `/admin/studios` | Studio management |
+| `/admin/studios/:id` | Studio detail |
+| `/admin/settings` | Admin settings |
+| `/admin/transactions` | Transaction management |
+| `/dashboard/items` | Studio items |
+| `/dashboard/promotions` | Studio promotions |
+| `/dashboard/referrals` | Studio referrals |
+| `/dashboard/builder` | Shop builder |
+| `/s/:slug` | Storefront home |
+| `/s/:slug/checkout` | Checkout |
+| `/s/:slug/referrals` | Storefront referrals |
+| `/s/:slug/market` | P2P marketplace |
+| `/s/:slug/market/listing/:id` | Listing detail |
+| `/s/:slug/item/:itemId` | Item detail |
+
 ## Requirements
 
 - Node.js 22 LTS (`.nvmrc`) · pnpm 10.x · Docker (for local Postgres 17 / Redis 7 / MinIO)
