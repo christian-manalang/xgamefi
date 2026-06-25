@@ -5,6 +5,7 @@ export * from "./queues";
 export * from "./settlement";
 export * from "./settings";
 export * from "./metrics";
+export * from "./audit";
 export * from "./zod";
 export {
   toAdminSettingsDto,

@@ -31,7 +31,8 @@
     "./dto/admin": "./src/dto/admin.ts",
     "./zod/admin": "./src/zod/admin.ts",
     "./apikey": "./src/apikey.ts",
-    "./dto/studioKey": "./src/dto/studioKey.ts"
+    "./dto/studioKey": "./src/dto/studioKey.ts",
+    "./audit": "./src/audit.ts"
   },
   "dependencies": {
     "@xgamefi/db": "workspace:*",

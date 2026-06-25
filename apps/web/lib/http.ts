@@ -10,6 +10,10 @@ export class HttpError extends Error {
   }
 }
 
+function isZodError(e: unknown): e is Error {
+  return e instanceof Error && e.name === "ZodError";
+}
+
 export function jsonOk<T>(data: T, init?: ResponseInit): Response {
   return Response.json({ data }, { status: 200, ...init });
 }
@@ -21,6 +25,7 @@ export function jsonError(status: number, code: string): Response {
 export function errorToResponse(e: unknown): Response {
   if (e instanceof AuthError) return jsonError(e.status, e.code);
   if (e instanceof HttpError) return jsonError(e.status, e.code);
+  if (isZodError(e)) return jsonError(400, "VALIDATION_ERROR");
   return jsonError(500, "INTERNAL");
 }
 
