@@ -42,6 +42,9 @@ importers:
       '@stellar/freighter-api':
         specifier: ^5.0.0
         version: 5.0.0
+      '@stellar/stellar-sdk':
+        specifier: ^15.1.0
+        version: 15.1.0
       '@xgamefi/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -73,9 +76,6 @@ importers:
       '@playwright/test':
         specifier: ^1.49.0
         version: 1.61.1
-      '@stellar/stellar-sdk':
-        specifier: ^15.1.0
-        version: 15.1.0
       '@tailwindcss/postcss':
         specifier: ^4.3.0
         version: 4.3.1

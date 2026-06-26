@@ -2,6 +2,15 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Storefront wallet connect button (#126)
+
+Added a player-facing wallet connect control to the storefront so authenticated players can complete checkout and P2P flows.
+
+- **Problem:** The checkout and marketplace endpoints require a player principal (`requirePrincipal` with `kind === 'player'`), but the storefront had no UI to authenticate with a Stellar wallet. This caused checkout to fail with `UNAUTHENTICATED` / `quote failed` before a QR could be generated.
+- **Component:** `apps/web/app/(storefront)/_components/wallet-connect.tsx` — client island that detects Freighter, requests access, fetches a nonce from `/api/v1/auth/wallet/challenge`, signs `xGameFi login\naddress: {addr}\nnonce: {nonce}` with Freighter, and verifies via `/api/v1/auth/wallet/verify`. It polls `/api/v1/auth/me` to show connected state and supports disconnect via `/api/v1/auth/logout`.
+- **Layout:** `apps/web/app/(storefront)/layout.tsx` — adds a storefront header containing the `WalletConnect` island so the control is available on every storefront page.
+- **Tests:** `apps/web/app/(storefront)/_components/wallet-connect.test.tsx` covers Freighter-not-installed, unauthenticated connect, already-authenticated display, and the full challenge/verify flow.
+
 ## Docker full-stack build fix (#124)
 
 Fixed `docker compose up -d --build` failing during image build when `pnpm db:generate` could not resolve the `prisma` CLI inside `packages/db`.

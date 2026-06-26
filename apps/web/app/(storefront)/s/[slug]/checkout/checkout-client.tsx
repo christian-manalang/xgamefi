@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { isConnected, signTransaction } from "@stellar/freighter-api";
+import { getAddress, isConnected, signTransaction } from "@stellar/freighter-api";
+import {
+  Asset,
+  BASE_FEE,
+  Horizon,
+  Memo,
+  Networks,
+  Operation,
+  TransactionBuilder,
+} from "@stellar/stellar-sdk";
 import type { ItemDto, ShopDto } from "@xgamefi/shared/dto";
 
 type Quote = {
@@ -23,12 +32,49 @@ type CheckoutClientProps = {
   currency: string | null;
 };
 
+const HORIZON_URL = "https://horizon-testnet.stellar.org";
+const NETWORK_PASSPHRASE = Networks.TESTNET;
+
+function truncateTextMemo(memo: string): string {
+  const buf = Buffer.from(memo, "utf8");
+  if (buf.length <= 28) return memo;
+  let end = 28;
+  while (end > 0 && (buf[end]! & 0xc0) === 0x80) end--;
+  return buf.subarray(0, end).toString("utf8");
+}
+
+function toStellarAsset(asset: { code: string; issuer?: string }): Asset {
+  return asset.code === "XLM" && !asset.issuer
+    ? Asset.native()
+    : new Asset(asset.code, asset.issuer!);
+}
+
+function hasTrustline(account: Horizon.AccountResponse, asset: { code: string; issuer?: string }): boolean {
+  if (asset.code === "XLM" && !asset.issuer) return true;
+  return account.balances.some((b) => {
+    if (b.asset_type === "native") return false;
+    return "asset_code" in b && b.asset_code === asset.code && "asset_issuer" in b && b.asset_issuer === asset.issuer;
+  });
+}
+
+function horizonErrorMessage(err: unknown): string {
+  const anyErr = err as { response?: { data?: { title?: string; extras?: { result_codes?: unknown } } }; data?: { title?: string; extras?: { result_codes?: unknown } } } | undefined;
+  const data = anyErr?.response?.data ?? anyErr?.data;
+  if (data) {
+    const codes = data.extras?.result_codes;
+    return `${data.title ?? "Horizon error"}${codes ? ` (${JSON.stringify(codes)})` : ""}`;
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
 export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutClientProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("waiting for quote");
   const [orderStatus, setOrderStatus] = useState<{ paymentStatus: string; deliveryStatus: string } | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [freighterAvailable, setFreighterAvailable] = useState(false);
+  const [missingTrustline, setMissingTrustline] = useState(false);
+  const [sourceAddress, setSourceAddress] = useState<string | null>(null);
 
   useEffect(() => {
     isConnected().then((r) => setFreighterAvailable(r.isConnected)).catch(() => setFreighterAvailable(false));
@@ -52,6 +98,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         setQuote(data);
         setStatusMessage("pending payment");
         setOrderStatus({ paymentStatus: "PENDING", deliveryStatus: "PENDING" });
+        setMissingTrustline(false);
         const assetPart = data.quote.asset.issuer
           ? `&asset_code=${encodeURIComponent(data.quote.asset.code)}&asset_issuer=${encodeURIComponent(data.quote.asset.issuer)}`
           : "";
@@ -78,18 +125,85 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
     };
   }, [item.id, item.price.currency, referralCode, currency]);
 
-  async function payWithFreighter() {
-    if (!quote) return;
+  async function addTrustline() {
+    if (!quote || !sourceAddress) return;
+    setStatusMessage(`adding ${quote.quote.asset.code} trustline…`);
     try {
-      const signed = await signTransaction(quote.quote.unsignedXdr, { networkPassphrase: "Test SDF Network ; September 2015" });
-      alert("Signed XDR: " + signed);
+      const server = new Horizon.Server(HORIZON_URL);
+      const account = await server.loadAccount(sourceAddress);
+      const asset = toStellarAsset(quote.quote.asset);
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(Operation.changeTrust({ asset }))
+        .setTimeout(180)
+        .build();
+
+      const signed = await signTransaction(tx.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+      if (signed.error) throw new Error(signed.error);
+
+      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, NETWORK_PASSPHRASE);
+      await server.submitTransaction(signedTx);
+      setMissingTrustline(false);
+      setStatusMessage(`${quote.quote.asset.code} trustline added — you can now pay`);
     } catch (err) {
-      console.error("freighter sign failed", err);
-      setStatusMessage("freighter sign failed");
+      console.error("add trustline failed", err);
+      setStatusMessage("trustline failed: " + horizonErrorMessage(err));
     }
   }
 
-  const displayStatus = orderStatus
+  async function payWithFreighter() {
+    if (!quote) return;
+    setStatusMessage("signing with Freighter…");
+    try {
+      const addressRes = await getAddress();
+      if (addressRes.error) throw new Error(addressRes.error);
+      const addr = addressRes.address;
+      if (!addr) throw new Error("No wallet address");
+      setSourceAddress(addr);
+
+      const server = new Horizon.Server(HORIZON_URL);
+      const account = await server.loadAccount(addr);
+
+      const asset = toStellarAsset(quote.quote.asset);
+      if (!hasTrustline(account, quote.quote.asset)) {
+        setMissingTrustline(true);
+        setStatusMessage(`${quote.quote.asset.code} trustline required before payment`);
+        return;
+      }
+      setMissingTrustline(false);
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(
+          Operation.payment({
+            destination: quote.quote.destination,
+            asset,
+            amount: quote.quote.amount,
+          }),
+        )
+        .addMemo(Memo.text(truncateTextMemo(quote.quote.memo)))
+        .setTimeout(180)
+        .build();
+
+      const signed = await signTransaction(tx.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+      if (signed.error) throw new Error(signed.error);
+
+      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, NETWORK_PASSPHRASE);
+      const submitted = await server.submitTransaction(signedTx);
+      setStatusMessage(`payment submitted: ${submitted.hash.slice(0, 12)}…`);
+    } catch (err) {
+      console.error("freighter payment failed", err);
+      setStatusMessage("payment failed: " + horizonErrorMessage(err));
+    }
+  }
+
+  const isPaymentStatus = statusMessage === "pending payment" || statusMessage === "waiting for quote";
+  const displayStatus = isPaymentStatus && orderStatus
     ? `${orderStatus.paymentStatus} / ${orderStatus.deliveryStatus}`
     : statusMessage;
 
@@ -118,6 +232,14 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
               className="mt-4 bg-primary-fixed text-on-primary-fixed px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px]"
             >
               Pay with Freighter
+            </button>
+          )}
+          {missingTrustline && quote && (
+            <button
+              onClick={addTrustline}
+              className="mt-3 border-2 border-outline px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface"
+            >
+              Add {quote.quote.asset.code} trustline
             </button>
           )}
           <p className="mt-4 text-on-surface" data-order-id={quote?.order.id} data-testid="payment-status">
