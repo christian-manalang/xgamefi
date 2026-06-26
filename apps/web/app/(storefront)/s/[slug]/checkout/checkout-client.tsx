@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { isConnected, signTransaction } from "@stellar/freighter-api";
+import { getAddress, isConnected, signTransaction } from "@stellar/freighter-api";
+import {
+  Asset,
+  BASE_FEE,
+  Horizon,
+  Memo,
+  Networks,
+  Operation,
+  TransactionBuilder,
+} from "@stellar/stellar-sdk";
 import type { ItemDto, ShopDto } from "@xgamefi/shared/dto";
 
 type Quote = {
@@ -22,6 +31,23 @@ type CheckoutClientProps = {
   referralCode: string | null;
   currency: string | null;
 };
+
+const HORIZON_URL = "https://horizon-testnet.stellar.org";
+const NETWORK_PASSPHRASE = Networks.TESTNET;
+
+function truncateTextMemo(memo: string): string {
+  const buf = Buffer.from(memo, "utf8");
+  if (buf.length <= 28) return memo;
+  let end = 28;
+  while (end > 0 && (buf[end]! & 0xc0) === 0x80) end--;
+  return buf.subarray(0, end).toString("utf8");
+}
+
+function toStellarAsset(asset: { code: string; issuer?: string }): Asset {
+  return asset.code === "XLM" && !asset.issuer
+    ? Asset.native()
+    : new Asset(asset.code, asset.issuer!);
+}
 
 export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutClientProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -80,12 +106,40 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
 
   async function payWithFreighter() {
     if (!quote) return;
+    setStatusMessage("signing with Freighter…");
     try {
-      const signed = await signTransaction(quote.quote.unsignedXdr, { networkPassphrase: "Test SDF Network ; September 2015" });
-      alert("Signed XDR: " + signed);
+      const addressRes = await getAddress();
+      if (addressRes.error) throw new Error(addressRes.error);
+      const sourceAddress = addressRes.address;
+      if (!sourceAddress) throw new Error("No wallet address");
+
+      const server = new Horizon.Server(HORIZON_URL);
+      const account = await server.loadAccount(sourceAddress);
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(
+          Operation.payment({
+            destination: quote.quote.destination,
+            asset: toStellarAsset(quote.quote.asset),
+            amount: quote.quote.amount,
+          }),
+        )
+        .addMemo(Memo.text(truncateTextMemo(quote.quote.memo)))
+        .setTimeout(180)
+        .build();
+
+      const signed = await signTransaction(tx.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+      if (signed.error) throw new Error(signed.error);
+
+      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, NETWORK_PASSPHRASE);
+      const submitted = await server.submitTransaction(signedTx);
+      setStatusMessage(`payment submitted: ${submitted.hash.slice(0, 12)}…`);
     } catch (err) {
-      console.error("freighter sign failed", err);
-      setStatusMessage("freighter sign failed");
+      console.error("freighter payment failed", err);
+      setStatusMessage("payment failed: " + (err instanceof Error ? err.message : String(err)));
     }
   }
 

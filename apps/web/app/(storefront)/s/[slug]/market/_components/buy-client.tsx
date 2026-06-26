@@ -1,8 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { signTransaction } from "@stellar/freighter-api";
+import { getAddress, isConnected, signTransaction } from "@stellar/freighter-api";
+import {
+  Asset,
+  BASE_FEE,
+  Horizon,
+  Memo,
+  Networks,
+  Operation,
+  TransactionBuilder,
+} from "@stellar/stellar-sdk";
 
 type BuyClientProps = {
   listing: { id: string; itemId: string; price: { amount: string; currency: string } };
@@ -13,10 +22,32 @@ type Quote = {
   quote: { destination: string; asset: { code: string; issuer?: string }; amount: string; memo: string; unsignedXdr: string };
 };
 
+const HORIZON_URL = "https://horizon-testnet.stellar.org";
+const NETWORK_PASSPHRASE = Networks.TESTNET;
+
+function truncateTextMemo(memo: string): string {
+  const buf = Buffer.from(memo, "utf8");
+  if (buf.length <= 28) return memo;
+  let end = 28;
+  while (end > 0 && (buf[end]! & 0xc0) === 0x80) end--;
+  return buf.subarray(0, end).toString("utf8");
+}
+
+function toStellarAsset(asset: { code: string; issuer?: string }): Asset {
+  return asset.code === "XLM" && !asset.issuer
+    ? Asset.native()
+    : new Asset(asset.code, asset.issuer!);
+}
+
 export function BuyClient({ listing }: BuyClientProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [status, setStatus] = useState("click Buy to start");
+  const [freighterAvailable, setFreighterAvailable] = useState(false);
+
+  useEffect(() => {
+    isConnected().then((r) => setFreighterAvailable(r.isConnected)).catch(() => setFreighterAvailable(false));
+  }, []);
 
   async function startQuote() {
     setStatus("quoting…");
@@ -35,12 +66,40 @@ export function BuyClient({ listing }: BuyClientProps) {
 
   async function payWithFreighter() {
     if (!quote) return;
+    setStatus("signing with Freighter…");
     try {
-      const signed = await signTransaction(quote.quote.unsignedXdr, { networkPassphrase: "Test SDF Network ; September 2015" });
-      setStatus("signed — submit from your wallet: " + signed);
+      const addressRes = await getAddress();
+      if (addressRes.error) throw new Error(addressRes.error);
+      const sourceAddress = addressRes.address;
+      if (!sourceAddress) throw new Error("No wallet address");
+
+      const server = new Horizon.Server(HORIZON_URL);
+      const account = await server.loadAccount(sourceAddress);
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(
+          Operation.payment({
+            destination: quote.quote.destination,
+            asset: toStellarAsset(quote.quote.asset),
+            amount: quote.quote.amount,
+          }),
+        )
+        .addMemo(Memo.text(truncateTextMemo(quote.quote.memo)))
+        .setTimeout(180)
+        .build();
+
+      const signed = await signTransaction(tx.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+      if (signed.error) throw new Error(signed.error);
+
+      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, NETWORK_PASSPHRASE);
+      const submitted = await server.submitTransaction(signedTx);
+      setStatus(`escrow submitted: ${submitted.hash.slice(0, 12)}…`);
     } catch (err) {
-      console.error("freighter sign failed", err);
-      setStatus("freighter sign failed");
+      console.error("freighter escrow failed", err);
+      setStatus("escrow failed: " + (err instanceof Error ? err.message : String(err)));
     }
   }
 
@@ -54,7 +113,7 @@ export function BuyClient({ listing }: BuyClientProps) {
         <button onClick={startQuote} className="mt-4 bg-primary-fixed text-on-primary-fixed px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px]">
           Buy
         </button>
-        {quote && (
+        {quote && freighterAvailable && (
           <button onClick={payWithFreighter} className="mt-4 ml-3 border-2 border-outline px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface">
             Pay with Freighter
           </button>
