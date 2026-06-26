@@ -62,6 +62,8 @@ export function BuyClient({ listing }: BuyClientProps) {
   const [qr, setQr] = useState<string | null>(null);
   const [status, setStatus] = useState("click Buy to start");
   const [freighterAvailable, setFreighterAvailable] = useState(false);
+  const [missingTrustline, setMissingTrustline] = useState(false);
+  const [sourceAddress, setSourceAddress] = useState<string | null>(null);
 
   useEffect(() => {
     isConnected().then((r) => setFreighterAvailable(r.isConnected)).catch(() => setFreighterAvailable(false));
@@ -77,9 +79,39 @@ export function BuyClient({ listing }: BuyClientProps) {
     const data: Quote = await res.json();
     setQuote(data);
     setStatus("pending escrow payment");
+    setMissingTrustline(false);
     const assetPart = data.quote.asset.issuer ? `&asset_code=${data.quote.asset.code}&asset_issuer=${data.quote.asset.issuer}` : "";
     const uri = `web+stellar:pay?destination=${data.quote.destination}&amount=${data.quote.amount}&memo=${data.quote.memo}${assetPart}`;
     QRCode.toDataURL(uri).then(setQr);
+  }
+
+  async function addTrustline() {
+    if (!quote || !sourceAddress) return;
+    setStatus(`adding ${quote.quote.asset.code} trustline…`);
+    try {
+      const server = new Horizon.Server(HORIZON_URL);
+      const account = await server.loadAccount(sourceAddress);
+      const asset = toStellarAsset(quote.quote.asset);
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(Operation.changeTrust({ asset }))
+        .setTimeout(180)
+        .build();
+
+      const signed = await signTransaction(tx.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+      if (signed.error) throw new Error(signed.error);
+
+      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, NETWORK_PASSPHRASE);
+      await server.submitTransaction(signedTx);
+      setMissingTrustline(false);
+      setStatus(`${quote.quote.asset.code} trustline added — you can now pay`);
+    } catch (err) {
+      console.error("add trustline failed", err);
+      setStatus("trustline failed: " + horizonErrorMessage(err));
+    }
   }
 
   async function payWithFreighter() {
@@ -88,26 +120,25 @@ export function BuyClient({ listing }: BuyClientProps) {
     try {
       const addressRes = await getAddress();
       if (addressRes.error) throw new Error(addressRes.error);
-      const sourceAddress = addressRes.address;
-      if (!sourceAddress) throw new Error("No wallet address");
+      const addr = addressRes.address;
+      if (!addr) throw new Error("No wallet address");
+      setSourceAddress(addr);
 
       const server = new Horizon.Server(HORIZON_URL);
-      const account = await server.loadAccount(sourceAddress);
+      const account = await server.loadAccount(addr);
 
       const asset = toStellarAsset(quote.quote.asset);
-      const needsTrustline = !hasTrustline(account, quote.quote.asset);
-      if (needsTrustline) {
-        setStatus(`adding ${quote.quote.asset.code} trustline…`);
+      if (!hasTrustline(account, quote.quote.asset)) {
+        setMissingTrustline(true);
+        setStatus(`${quote.quote.asset.code} trustline required before payment`);
+        return;
       }
+      setMissingTrustline(false);
 
-      const builder = new TransactionBuilder(account, {
+      const tx = new TransactionBuilder(account, {
         fee: BASE_FEE,
         networkPassphrase: NETWORK_PASSPHRASE,
-      });
-      if (needsTrustline) {
-        builder.addOperation(Operation.changeTrust({ asset }));
-      }
-      const tx = builder
+      })
         .addOperation(
           Operation.payment({
             destination: quote.quote.destination,
@@ -144,6 +175,11 @@ export function BuyClient({ listing }: BuyClientProps) {
         {quote && freighterAvailable && (
           <button onClick={payWithFreighter} className="mt-4 ml-3 border-2 border-outline px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface">
             Pay with Freighter
+          </button>
+        )}
+        {missingTrustline && quote && (
+          <button onClick={addTrustline} className="mt-4 ml-3 border-2 border-outline px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface">
+            Add {quote.quote.asset.code} trustline
           </button>
         )}
         {qr && <img src={qr} alt="Payment QR" className="w-64 h-64 mt-6" />}

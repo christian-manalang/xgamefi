@@ -73,6 +73,8 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
   const [orderStatus, setOrderStatus] = useState<{ paymentStatus: string; deliveryStatus: string } | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [freighterAvailable, setFreighterAvailable] = useState(false);
+  const [missingTrustline, setMissingTrustline] = useState(false);
+  const [sourceAddress, setSourceAddress] = useState<string | null>(null);
 
   useEffect(() => {
     isConnected().then((r) => setFreighterAvailable(r.isConnected)).catch(() => setFreighterAvailable(false));
@@ -96,6 +98,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         setQuote(data);
         setStatusMessage("pending payment");
         setOrderStatus({ paymentStatus: "PENDING", deliveryStatus: "PENDING" });
+        setMissingTrustline(false);
         const assetPart = data.quote.asset.issuer
           ? `&asset_code=${encodeURIComponent(data.quote.asset.code)}&asset_issuer=${encodeURIComponent(data.quote.asset.issuer)}`
           : "";
@@ -122,32 +125,60 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
     };
   }, [item.id, item.price.currency, referralCode, currency]);
 
+  async function addTrustline() {
+    if (!quote || !sourceAddress) return;
+    setStatusMessage(`adding ${quote.quote.asset.code} trustline…`);
+    try {
+      const server = new Horizon.Server(HORIZON_URL);
+      const account = await server.loadAccount(sourceAddress);
+      const asset = toStellarAsset(quote.quote.asset);
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(Operation.changeTrust({ asset }))
+        .setTimeout(180)
+        .build();
+
+      const signed = await signTransaction(tx.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+      if (signed.error) throw new Error(signed.error);
+
+      const signedTx = TransactionBuilder.fromXDR(signed.signedTxXdr, NETWORK_PASSPHRASE);
+      await server.submitTransaction(signedTx);
+      setMissingTrustline(false);
+      setStatusMessage(`${quote.quote.asset.code} trustline added — you can now pay`);
+    } catch (err) {
+      console.error("add trustline failed", err);
+      setStatusMessage("trustline failed: " + horizonErrorMessage(err));
+    }
+  }
+
   async function payWithFreighter() {
     if (!quote) return;
     setStatusMessage("signing with Freighter…");
     try {
       const addressRes = await getAddress();
       if (addressRes.error) throw new Error(addressRes.error);
-      const sourceAddress = addressRes.address;
-      if (!sourceAddress) throw new Error("No wallet address");
+      const addr = addressRes.address;
+      if (!addr) throw new Error("No wallet address");
+      setSourceAddress(addr);
 
       const server = new Horizon.Server(HORIZON_URL);
-      const account = await server.loadAccount(sourceAddress);
+      const account = await server.loadAccount(addr);
 
       const asset = toStellarAsset(quote.quote.asset);
-      const needsTrustline = !hasTrustline(account, quote.quote.asset);
-      if (needsTrustline) {
-        setStatusMessage(`adding ${quote.quote.asset.code} trustline…`);
+      if (!hasTrustline(account, quote.quote.asset)) {
+        setMissingTrustline(true);
+        setStatusMessage(`${quote.quote.asset.code} trustline required before payment`);
+        return;
       }
+      setMissingTrustline(false);
 
-      const builder = new TransactionBuilder(account, {
+      const tx = new TransactionBuilder(account, {
         fee: BASE_FEE,
         networkPassphrase: NETWORK_PASSPHRASE,
-      });
-      if (needsTrustline) {
-        builder.addOperation(Operation.changeTrust({ asset }));
-      }
-      const tx = builder
+      })
         .addOperation(
           Operation.payment({
             destination: quote.quote.destination,
@@ -201,6 +232,14 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
               className="mt-4 bg-primary-fixed text-on-primary-fixed px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px]"
             >
               Pay with Freighter
+            </button>
+          )}
+          {missingTrustline && quote && (
+            <button
+              onClick={addTrustline}
+              className="mt-3 border-2 border-outline px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface"
+            >
+              Add {quote.quote.asset.code} trustline
             </button>
           )}
           <p className="mt-4 text-on-surface" data-order-id={quote?.order.id} data-testid="payment-status">
