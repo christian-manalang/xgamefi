@@ -39,6 +39,16 @@ function toStellarAsset(asset: { code: string; issuer?: string }): Asset {
     : new Asset(asset.code, asset.issuer!);
 }
 
+function horizonErrorMessage(err: unknown): string {
+  const anyErr = err as { response?: { data?: { title?: string; extras?: { result_codes?: unknown } } }; data?: { title?: string; extras?: { result_codes?: unknown } } } | undefined;
+  const data = anyErr?.response?.data ?? anyErr?.data;
+  if (data) {
+    const codes = data.extras?.result_codes;
+    return `${data.title ?? "Horizon error"}${codes ? ` (${JSON.stringify(codes)})` : ""}`;
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
 export function BuyClient({ listing }: BuyClientProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [qr, setQr] = useState<string | null>(null);
@@ -99,7 +109,7 @@ export function BuyClient({ listing }: BuyClientProps) {
       setStatus(`escrow submitted: ${submitted.hash.slice(0, 12)}…`);
     } catch (err) {
       console.error("freighter escrow failed", err);
-      setStatus("escrow failed: " + (err instanceof Error ? err.message : String(err)));
+      setStatus("escrow failed: " + horizonErrorMessage(err));
     }
   }
 

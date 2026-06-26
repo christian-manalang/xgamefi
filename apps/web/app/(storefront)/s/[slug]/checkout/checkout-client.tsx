@@ -49,6 +49,16 @@ function toStellarAsset(asset: { code: string; issuer?: string }): Asset {
     : new Asset(asset.code, asset.issuer!);
 }
 
+function horizonErrorMessage(err: unknown): string {
+  const anyErr = err as { response?: { data?: { title?: string; extras?: { result_codes?: unknown } } }; data?: { title?: string; extras?: { result_codes?: unknown } } } | undefined;
+  const data = anyErr?.response?.data ?? anyErr?.data;
+  if (data) {
+    const codes = data.extras?.result_codes;
+    return `${data.title ?? "Horizon error"}${codes ? ` (${JSON.stringify(codes)})` : ""}`;
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
 export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutClientProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>("waiting for quote");
@@ -139,7 +149,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       setStatusMessage(`payment submitted: ${submitted.hash.slice(0, 12)}…`);
     } catch (err) {
       console.error("freighter payment failed", err);
-      setStatusMessage("payment failed: " + (err instanceof Error ? err.message : String(err)));
+      setStatusMessage("payment failed: " + horizonErrorMessage(err));
     }
   }
 
