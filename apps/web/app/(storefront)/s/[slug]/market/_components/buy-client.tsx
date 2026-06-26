@@ -39,6 +39,14 @@ function toStellarAsset(asset: { code: string; issuer?: string }): Asset {
     : new Asset(asset.code, asset.issuer!);
 }
 
+function hasTrustline(account: Horizon.AccountResponse, asset: { code: string; issuer?: string }): boolean {
+  if (asset.code === "XLM" && !asset.issuer) return true;
+  return account.balances.some((b) => {
+    if (b.asset_type === "native") return false;
+    return "asset_code" in b && b.asset_code === asset.code && "asset_issuer" in b && b.asset_issuer === asset.issuer;
+  });
+}
+
 function horizonErrorMessage(err: unknown): string {
   const anyErr = err as { response?: { data?: { title?: string; extras?: { result_codes?: unknown } } }; data?: { title?: string; extras?: { result_codes?: unknown } } } | undefined;
   const data = anyErr?.response?.data ?? anyErr?.data;
@@ -86,14 +94,24 @@ export function BuyClient({ listing }: BuyClientProps) {
       const server = new Horizon.Server(HORIZON_URL);
       const account = await server.loadAccount(sourceAddress);
 
-      const tx = new TransactionBuilder(account, {
+      const asset = toStellarAsset(quote.quote.asset);
+      const needsTrustline = !hasTrustline(account, quote.quote.asset);
+      if (needsTrustline) {
+        setStatus(`adding ${quote.quote.asset.code} trustline…`);
+      }
+
+      const builder = new TransactionBuilder(account, {
         fee: BASE_FEE,
         networkPassphrase: NETWORK_PASSPHRASE,
-      })
+      });
+      if (needsTrustline) {
+        builder.addOperation(Operation.changeTrust({ asset }));
+      }
+      const tx = builder
         .addOperation(
           Operation.payment({
             destination: quote.quote.destination,
-            asset: toStellarAsset(quote.quote.asset),
+            asset,
             amount: quote.quote.amount,
           }),
         )
