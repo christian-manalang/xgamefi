@@ -1,8 +1,16 @@
 import { test, expect } from "@playwright/test";
 import { Horizon, Keypair, TransactionBuilder, Operation, Asset, Memo, Networks, BASE_FEE } from "@stellar/stellar-sdk";
+import { createHash } from "node:crypto";
 
 function challengeMessage(walletAddress: string, nonce: string): string {
   return `xGameFi login\naddress: ${walletAddress}\nnonce: ${nonce}`;
+}
+
+function signSep53(keypair: Keypair, message: string): string {
+  const prefix = Buffer.from("Stellar Signed Message:\n", "utf8");
+  const payload = Buffer.concat([prefix, Buffer.from(message, "utf8")]);
+  const hash = createHash("sha256").update(payload).digest();
+  return keypair.sign(hash).toString("base64");
 }
 
 async function fundViaFriendbot(page: import("@playwright/test").Page, publicKey: string) {
@@ -32,8 +40,7 @@ async function authenticatePlayer(page: import("@playwright/test").Page, keypair
   const { nonce } = data;
 
   const message = challengeMessage(publicKey, nonce);
-  const signature = keypair.sign(Buffer.from(message, "utf8"));
-  const signatureBase64 = signature.toString("base64");
+  const signatureBase64 = signSep53(keypair, message);
 
   const verifyRes = await page.request.post("/api/v1/auth/wallet/verify", {
     headers,

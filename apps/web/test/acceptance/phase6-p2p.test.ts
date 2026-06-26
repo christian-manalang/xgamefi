@@ -38,6 +38,7 @@ async function wipe() {
   await prisma.promotion.deleteMany();
   await prisma.item.deleteMany();
   await prisma.player.deleteMany();
+  await prisma.shop.deleteMany();
   await prisma.studio.deleteMany();
 }
 
