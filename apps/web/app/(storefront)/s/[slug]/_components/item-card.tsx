@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ItemDto } from "@xgamefi/shared/dto";
 
 const RARITY_CLASS: Record<string, string> = {
@@ -10,13 +11,22 @@ const RARITY_CLASS: Record<string, string> = {
   LIMITED: "bg-error-container text-on-error-container",
 };
 
-export function ItemCard({ item, onSelect }: { item: ItemDto; onSelect?: (item: ItemDto) => void }) {
-  return (
+function formatAmount(amount: string): string {
+  const n = Number(amount);
+  if (Number.isNaN(n)) return amount;
+  return n.toLocaleString(undefined, { maximumFractionDigits: 7 });
+}
+
+export function ItemCard({ item, slug, onSelect }: { item: ItemDto; slug?: string; onSelect?: (item: ItemDto) => void }) {
+  const detailHref = slug ? `/s/${slug}/item/${item.id}` : undefined;
+
+  const card = (
     <article className="bg-surface-container-low border-2 border-outline-variant p-4 flex flex-col gap-3 transition-colors hover:border-primary-fixed">
       {item.imageUrl ? (
         <img
           src={item.imageUrl}
           alt={item.name}
+          loading="lazy"
           className="w-full aspect-square object-cover bg-surface-container-high"
         />
       ) : (
@@ -43,9 +53,15 @@ export function ItemCard({ item, onSelect }: { item: ItemDto; onSelect?: (item: 
           <span />
         )}
         <span className="font-display text-[24px] font-semibold text-primary-fixed">
-          {item.price.amount} <span className="text-[12px] font-mono">{item.price.currency}</span>
+          {formatAmount(item.price.amount)} <span className="text-[12px] font-mono">{item.price.currency}</span>
         </span>
       </div>
+
+      {item.stock !== null && item.stock !== undefined && (
+        <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-on-surface-variant">
+          Stock: {item.stock}
+        </p>
+      )}
 
       {onSelect ? (
         <button
@@ -58,4 +74,14 @@ export function ItemCard({ item, onSelect }: { item: ItemDto; onSelect?: (item: 
       ) : null}
     </article>
   );
+
+  if (detailHref) {
+    return (
+      <Link href={detailHref} className="block">
+        {card}
+      </Link>
+    );
+  }
+
+  return card;
 }

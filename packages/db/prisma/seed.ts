@@ -56,6 +56,21 @@ async function main() {
     },
   });
 
+  const studioOwnerPasswordHash = await argon2.hash(env.STUDIO_OWNER_PASSWORD, {
+    type: argon2.argon2id,
+  });
+  await prisma.user.upsert({
+    where: { username: env.STUDIO_OWNER_USERNAME },
+    update: { passwordHash: studioOwnerPasswordHash, role: "STUDIO_OWNER", studioId: studio.id, isActive: true },
+    create: {
+      username: env.STUDIO_OWNER_USERNAME,
+      passwordHash: studioOwnerPasswordHash,
+      role: "STUDIO_OWNER",
+      studioId: studio.id,
+      isActive: true,
+    },
+  });
+
   const swordSkin = await prisma.item.upsert({
     where: { studioId_externalId: { studioId: studio.id, externalId: "sword_skin_01" } },
     update: {
@@ -113,7 +128,7 @@ async function main() {
   });
 
   console.log(
-    `Seed complete: admin=${admin.username} studio=${studio.slug} swordSkin=${swordSkin.id} (${FILLER_ITEMS.length} filler items)`,
+    `Seed complete: admin=${admin.username} studio=${studio.slug} swordSkin=${swordSkin.id} (${FILLER_ITEMS.length} filler items) studioOwner=${env.STUDIO_OWNER_USERNAME}`,
   );
 }
 

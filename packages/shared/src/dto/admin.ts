@@ -110,6 +110,7 @@ export type AdminStudioDto = {
   id: string;
   name: string;
   slug: string;
+  description: string | null;
   status: string;
   platformFeeBps: number;
   payoutWalletAddress: string | null;
@@ -123,6 +124,7 @@ export function toAdminStudioDto(row: {
   id: string;
   name: string;
   slug: string;
+  description: string | null;
   status: string;
   platformFeeBps: number;
   payoutWalletAddress: string | null;
@@ -135,6 +137,7 @@ export function toAdminStudioDto(row: {
     id: row.id,
     name: row.name,
     slug: row.slug,
+    description: row.description,
     status: row.status,
     platformFeeBps: row.platformFeeBps,
     payoutWalletAddress: row.payoutWalletAddress,

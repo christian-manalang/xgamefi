@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { AdminNavLink } from "./_components/admin-nav-link";
 
 const NAV = [
   { href: "/admin", label: "OVERVIEW" },
@@ -26,13 +26,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <div className="flex">
         <nav className="w-64 border-r-2 border-outline-variant min-h-[calc(100vh-5rem)] py-6">
           {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="block px-6 py-3 font-mono text-xs tracking-[0.1em] hover:text-primary-fixed"
-            >
-              {n.label}
-            </Link>
+            <AdminNavLink key={n.href} href={n.href} label={n.label} />
           ))}
         </nav>
         <main className="flex-1 px-16 py-8">{children}</main>

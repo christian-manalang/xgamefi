@@ -64,7 +64,7 @@ export function StorefrontGrid({
         }
       >
         {sorted.map((item) => (
-          <ItemCard key={item.id} item={item} onSelect={setSelected} />
+          <ItemCard key={item.id} item={item} slug={slug} onSelect={setSelected} />
         ))}
       </div>
       <ItemModal item={selected} slug={slug} onClose={() => setSelected(null)} />

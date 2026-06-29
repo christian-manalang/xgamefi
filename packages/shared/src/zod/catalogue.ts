@@ -34,6 +34,7 @@ export const ShopItemsQuery = z.object({
   category: z.string().min(1).optional(),
   rarity: z.string().min(1).optional(),
   featured: z.coerce.boolean().optional(),
+  sort: z.enum(["featured", "price_asc", "price_desc", "newest"]).optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(60).default(24),
 });

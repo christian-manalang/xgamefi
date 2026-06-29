@@ -87,3 +87,12 @@ export const WebhookTestInput = z
 
 export type WebhookTestInputT = z.infer<typeof WebhookTestInput>;
 
+export const AdminUserUpdateInput = z
+  .object({
+    role: z.enum(["ADMIN", "STUDIO_OWNER", "STUDIO_MEMBER"]).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .strict();
+
+export type AdminUserUpdateInputT = z.infer<typeof AdminUserUpdateInput>;
+

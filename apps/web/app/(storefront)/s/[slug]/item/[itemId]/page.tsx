@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 import { getPublicItem, getPublishedShop, getStudioBrand } from "../../../../../../lib/catalogue-queries";
 import { brandToStyle } from "../../brand";
 
+function formatAmount(amount: string): string {
+  const n = Number(amount);
+  if (Number.isNaN(n)) return amount;
+  return n.toLocaleString(undefined, { maximumFractionDigits: 7 });
+}
+
 export default async function Page({ params }: { params: Promise<{ slug: string; itemId: string }> }) {
   const { slug, itemId } = await params;
 
@@ -66,7 +72,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string;
               </span>
               <span className="font-display text-[32px] font-semibold text-primary-fixed"
               >
-                {item.price.amount} <span className="text-[14px] font-mono">{item.price.currency}</span>
+                {formatAmount(item.price.amount)} <span className="text-[14px] font-mono">{item.price.currency}</span>
               </span>
             </div>
 
