@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export function AdminNavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(`${href}/`);
+  const active = pathname === href || (href !== "/admin" && pathname.startsWith(`${href}/`));
   return (
     <Link
       href={href}

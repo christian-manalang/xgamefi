@@ -17,7 +17,7 @@ export function SideRail() {
   return (
     <aside className="flex w-64 shrink-0 flex-col gap-2 border-r-2 border-outline-variant bg-surface-container-lowest p-4">
       {links.map(({ href, label }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`);
+        const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
         return (
           <Link
             key={href}

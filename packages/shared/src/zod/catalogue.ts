@@ -31,8 +31,8 @@ export type ItemOverrideInput = z.infer<typeof ItemOverrideInput>;
 
 export const ShopItemsQuery = z.object({
   q: z.string().trim().min(1).optional(),
-  category: z.string().min(1).optional(),
-  rarity: z.string().min(1).optional(),
+  category: z.string().optional(),
+  rarity: z.string().optional(),
   featured: z.coerce.boolean().optional(),
   sort: z.enum(["featured", "price_asc", "price_desc", "newest"]).optional(),
   page: z.coerce.number().int().positive().default(1),

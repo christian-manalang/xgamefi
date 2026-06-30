@@ -24,7 +24,8 @@ export function StorefrontFilters({ categories, rarities }: { categories: string
   function buildNext(overrides: Record<string, string | "">) {
     const next = new URLSearchParams(params.toString());
     for (const [key, value] of Object.entries(overrides)) {
-      if (value) next.set(key, value);
+      if (value === "__all__") next.delete(key);
+      else if (value) next.set(key, value);
       else next.delete(key);
     }
     next.delete("page");
@@ -76,7 +77,7 @@ export function StorefrontFilters({ categories, rarities }: { categories: string
           className={inputClass}
           aria-label="Category"
         >
-          <option value="">ALL CATEGORIES</option>
+          <option value="__all__">ALL CATEGORIES</option>
           {categories.map((c) => (
             <option key={c} value={c}>{c.toUpperCase()}</option>
           ))}
@@ -89,7 +90,7 @@ export function StorefrontFilters({ categories, rarities }: { categories: string
           className={inputClass}
           aria-label="Rarity"
         >
-          <option value="">ALL RARITIES</option>
+          <option value="__all__">ALL RARITIES</option>
           {rarities.map((r) => (
             <option key={r} value={r}>{r.toUpperCase()}</option>
           ))}

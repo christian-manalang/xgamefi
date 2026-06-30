@@ -68,7 +68,11 @@ export async function assertPublicUrl(rawUrl: string, resolve: Resolver = defaul
     throw new Error(`Invalid URL: ${rawUrl}`);
   }
   if (url.protocol !== "https:") {
-    throw new Error("Only HTTPS URLs are allowed");
+    const hostname = url.hostname.toLowerCase();
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+    if (!isLocalhost) {
+      throw new Error("Only HTTPS URLs are allowed");
+    }
   }
   const ips = await resolve(url.hostname);
   if (ips.length === 0) throw new Error("Host did not resolve");

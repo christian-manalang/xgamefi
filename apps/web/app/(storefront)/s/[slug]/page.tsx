@@ -63,9 +63,25 @@ export default async function Page({
     <main style={brandToStyle(brand)} className="min-h-screen bg-background text-on-background">
       <section className="flex flex-col gap-6 p-8 max-w-[1440px] mx-auto">
         <header className="flex flex-col gap-2">
-          <h1 className="font-display text-[48px] leading-[52px] font-bold tracking-[-0.02em] text-on-surface">
-            {typeof brand?.name === "string" ? brand.name : slug}
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="font-display text-[48px] leading-[52px] font-bold tracking-[-0.02em] text-on-surface">
+              {typeof brand?.name === "string" ? brand.name : slug}
+            </h1>
+            <nav className="flex items-center gap-3">
+              <Link
+                href={`/s/${slug}/referrals`}
+                className="font-mono uppercase tracking-[0.1em] text-[12px] px-4 py-2 border-2 border-outline-variant text-on-surface-variant hover:border-primary-fixed hover:text-primary-fixed transition-colors"
+              >
+                Referrals
+              </Link>
+              <Link
+                href={`/s/${slug}/market`}
+                className="font-mono uppercase tracking-[0.1em] text-[12px] px-4 py-2 border-2 border-outline-variant text-on-surface-variant hover:border-primary-fixed hover:text-primary-fixed transition-colors"
+              >
+                Market
+              </Link>
+            </nav>
+          </div>
           <p className="font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface-variant">
             {total} ITEM{total === 1 ? "" : "S"} · PAGE {page} OF {totalPages}
           </p>
