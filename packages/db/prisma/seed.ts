@@ -94,8 +94,10 @@ async function main() {
     },
   });
 
+  const allItemIds = [swordSkin.id];
+
   for (const f of FILLER_ITEMS) {
-    await prisma.item.upsert({
+    const item = await prisma.item.upsert({
       where: { studioId_externalId: { studioId: studio.id, externalId: f.externalId } },
       update: {},
       create: {
@@ -112,15 +114,16 @@ async function main() {
         syncedAt: new Date(),
       },
     });
+    allItemIds.push(item.id);
   }
 
   await prisma.shop.upsert({
     where: { studioId: studio.id },
-    update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], publishedAt: new Date() },
+    update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], layout: { mode: "grid", sections: [{ title: "ALL", itemIds: allItemIds }] }, publishedAt: new Date() },
     create: {
       studioId: studio.id,
       status: "PUBLISHED",
-      layout: { mode: "grid", sections: [{ title: "FEATURED", itemIds: [swordSkin.id] }] },
+      layout: { mode: "grid", sections: [{ title: "ALL", itemIds: allItemIds }] },
       theme: GRIDLOCK_BRAND,
       featuredItemIds: [swordSkin.id],
       publishedAt: new Date(),

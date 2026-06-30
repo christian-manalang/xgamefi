@@ -21,7 +21,10 @@ export async function PATCH(req: Request): Promise<Response> {
   try {
     const principal = await requireRole("ADMIN");
     const patch = AdminSettingsInput.parse(await req.json());
-    const updated = await updatePlatformSettings(patch);
+    const cleaned = Object.fromEntries(
+      Object.entries(patch).map(([k, v]) => [k, v === null ? undefined : v])
+    ) as Parameters<typeof updatePlatformSettings>[0];
+    const updated = await updatePlatformSettings(cleaned);
     await writeAudit({
       actorType: "USER",
       actorUserId: principal.kind === "user" ? principal.userId : null,

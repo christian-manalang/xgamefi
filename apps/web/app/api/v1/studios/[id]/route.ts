@@ -31,11 +31,15 @@ export async function PATCH(req: Request, { params }: Ctx): Promise<Response> {
     if (!existing) throw new HttpError(404, "studio not found");
     if (patch.apiBaseUrl) await assertPublicUrl(patch.apiBaseUrl);
 
-    const updated = await prisma.studio.update({ where: { id }, data: patch });
+    const cleaned = Object.fromEntries(
+      Object.entries(patch).map(([k, v]) => [k, v === null ? undefined : v])
+    );
+
+    const updated = await prisma.studio.update({ where: { id }, data: cleaned });
 
     let action = "studio.update";
-    if (patch.status === "ACTIVE") action = "studio.approve";
-    else if (patch.status === "SUSPENDED") action = "studio.suspend";
+    if (cleaned.status === "ACTIVE") action = "studio.approve";
+    else if (cleaned.status === "SUSPENDED") action = "studio.suspend";
     await writeAudit({
       actorType: "USER",
       actorUserId: principal.kind === "user" ? principal.userId : null,
