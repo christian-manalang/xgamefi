@@ -19,11 +19,8 @@ export async function GET(): Promise<Response> {
 
 export async function PATCH(req: Request): Promise<Response> {
   try {
-    const rawBody = await req.text();
-    console.log("[admin/settings PATCH] raw body:", rawBody);
-    const body = JSON.parse(rawBody);
     const principal = await requireRole("ADMIN");
-    const patch = AdminSettingsInput.parse(body);
+    const patch = AdminSettingsInput.parse(await req.json());
     const cleaned = Object.fromEntries(
       Object.entries(patch).map(([k, v]) => [k, v === null ? undefined : v])
     ) as Parameters<typeof updatePlatformSettings>[0];
@@ -39,7 +36,6 @@ export async function PATCH(req: Request): Promise<Response> {
     });
     return Response.json({ data: toAdminSettingsDto(updated) });
   } catch (e) {
-    console.error("[admin/settings PATCH] error:", e);
     return handleError(e);
   }
 }
