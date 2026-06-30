@@ -19,8 +19,9 @@ export async function GET(): Promise<Response> {
 
 export async function PATCH(req: Request): Promise<Response> {
   try {
-    const body = await req.json();
-    console.log("[admin/settings PATCH] raw body:", JSON.stringify(body));
+    const rawBody = await req.text();
+    console.log("[admin/settings PATCH] raw body:", rawBody);
+    const body = JSON.parse(rawBody);
     const principal = await requireRole("ADMIN");
     const patch = AdminSettingsInput.parse(body);
     const cleaned = Object.fromEntries(
