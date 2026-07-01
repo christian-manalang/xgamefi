@@ -7,7 +7,7 @@ import {
   writeAudit,
   assertPublicUrl,
 } from "@xgamefi/shared";
-import { handleError, getClientIp } from "@/lib/http";
+import { handleError, getClientIp, HttpError } from "@/lib/http";
 
 export async function GET(_req: Request): Promise<Response> {
   try {
@@ -23,7 +23,13 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const principal = await requireRole("ADMIN");
     const input = StudioOnboardInput.parse(await req.json());
-    if (input.apiBaseUrl) await assertPublicUrl(input.apiBaseUrl);
+    if (input.apiBaseUrl) {
+      try {
+        await assertPublicUrl(input.apiBaseUrl);
+      } catch {
+        throw new HttpError(400, "INVALID_API_BASE_URL");
+      }
+    }
     const settings = await getPlatformSettings();
     const created = await prisma.studio.create({
       data: {

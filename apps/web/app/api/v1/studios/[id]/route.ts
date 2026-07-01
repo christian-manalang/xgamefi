@@ -29,7 +29,13 @@ export async function PATCH(req: Request, { params }: Ctx): Promise<Response> {
     }
     const existing = await prisma.studio.findUnique({ where: { id } });
     if (!existing) throw new HttpError(404, "studio not found");
-    if (patch.apiBaseUrl) await assertPublicUrl(patch.apiBaseUrl);
+    if (patch.apiBaseUrl) {
+      try {
+        await assertPublicUrl(patch.apiBaseUrl);
+      } catch (e) {
+        throw new HttpError(400, "INVALID_API_BASE_URL");
+      }
+    }
 
     const cleaned = Object.fromEntries(
       Object.entries(patch).map(([k, v]) => [k, v === null ? undefined : v])
