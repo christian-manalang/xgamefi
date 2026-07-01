@@ -22,7 +22,9 @@ export async function PATCH(req: Request, { params }: Ctx): Promise<Response> {
     const { id } = await params;
     const principal = await requireStudio(id);
     const isAdmin = principal.kind === "user" && principal.role === "ADMIN";
-    const patch = StudioPatchInput.parse(await req.json());
+    const rawBody = await req.text();
+    console.log(`[studio PATCH] id=${id} body=${rawBody}`);
+    const patch = StudioPatchInput.parse(JSON.parse(rawBody));
 
     if ((patch.platformFeeBps !== undefined || patch.status !== undefined) && !isAdmin) {
       throw new HttpError(403, "only an admin may change fee or status");
