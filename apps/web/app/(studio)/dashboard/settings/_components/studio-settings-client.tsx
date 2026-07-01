@@ -25,53 +25,57 @@ export function StudioSettingsClient({
     "w-full bg-surface-container-low border-2 border-outline-variant text-on-surface font-mono uppercase tracking-[0.05em] text-[12px] px-3 py-2 outline-none focus:border-primary-fixed";
   const labelClass = "font-mono text-xs tracking-[0.1em] text-on-surface-variant";
 
-  async function saveProfile(e: React.FormEvent) {
+  async function saveAll(e: React.FormEvent) {
     e.preventDefault();
-    await patchStudio({
+    setBusy(true);
+    setMessage(null);
+    setWebhookSecret(null);
+
+    const profilePatch = {
       name: form.name,
       description: form.description,
       payoutWalletAddress: form.payoutWalletAddress,
       integrationMode: form.integrationMode,
       apiBaseUrl: form.apiBaseUrl,
-    });
-  }
+    };
 
-  async function patchStudio(patch: Partial<AdminStudioDto>) {
-    setBusy(true);
-    setMessage(null);
-    const res = await fetch(`/api/v1/studios/${studio.id}`, {
+    const webhookPatch = { url: form.webhookUrl };
+
+    let profileOk = false;
+    let webhookOk = false;
+
+    const profileRes = await fetch(`/api/v1/studios/${studio.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
+      body: JSON.stringify(profilePatch),
     });
-    const json = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (res.ok && json.data) {
-      setStudio(json.data);
-      setForm(json.data);
-      setMessage("saved");
-    } else {
-      setMessage(json.error?.message ?? "failed");
+    const profileJson = await profileRes.json().catch(() => ({}));
+    if (profileRes.ok && profileJson.data) {
+      setStudio(profileJson.data);
+      setForm(profileJson.data);
+      profileOk = true;
     }
-  }
 
-  async function saveWebhook(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setMessage(null);
-    setWebhookSecret(null);
-    const res = await fetch(`/api/v1/studios/${studio.id}/webhook`, {
+    const webhookRes = await fetch(`/api/v1/studios/${studio.id}/webhook`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: form.webhookUrl }),
+      body: JSON.stringify(webhookPatch),
     });
-    const json = await res.json().catch(() => ({}));
+    const webhookJson = await webhookRes.json().catch(() => ({}));
+    if (webhookRes.ok && webhookJson.data) {
+      setWebhookSecret(webhookJson.data.secret);
+      webhookOk = true;
+    }
+
     setBusy(false);
-    if (res.ok && json.data) {
-      setWebhookSecret(json.data.secret);
-      setMessage("webhook saved — secret rotated");
+    if (profileOk && webhookOk) {
+      setMessage("saved");
+    } else if (profileOk) {
+      setMessage("profile saved — webhook failed: " + (profileJson.error?.message ?? webhookJson.error?.message ?? "unknown"));
+    } else if (webhookOk) {
+      setMessage("webhook saved — profile failed: " + (webhookJson.error?.message ?? profileJson.error?.message ?? "unknown"));
     } else {
-      setMessage(json.error?.message ?? "failed");
+      setMessage(profileJson.error?.message ?? webhookJson.error?.message ?? "failed");
     }
   }
 
@@ -152,7 +156,7 @@ export function StudioSettingsClient({
         </div>
       )}
 
-      <form onSubmit={saveProfile} className="space-y-6 max-w-2xl">
+      <form onSubmit={saveAll} className="space-y-6 max-w-2xl">
         <h2 className="font-mono text-xs tracking-[0.1em] text-on-surface-variant">PROFILE</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
@@ -194,25 +198,14 @@ export function StudioSettingsClient({
               className={inputClass}
             />
           </div>
-        </div>
-        <button
-          type="submit"
-          disabled={busy}
-          className="bg-primary-fixed text-on-primary-fixed px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] disabled:opacity-50"
-        >
-          {busy ? "SAVING..." : "SAVE PROFILE"}
-        </button>
-      </form>
-
-      <form onSubmit={saveWebhook} className="space-y-6 max-w-2xl">
-        <h2 className="font-mono text-xs tracking-[0.1em] text-on-surface-variant">WEBHOOK</h2>
-        <div>
-          <label className={labelClass}>WEBHOOK URL</label>
-          <input
-            value={form.webhookUrl ?? ""}
-            onChange={(e) => setForm({ ...form, webhookUrl: e.target.value || null })}
-            className={inputClass}
-          />
+          <div className="md:col-span-2">
+            <label className={labelClass}>WEBHOOK URL</label>
+            <input
+              value={form.webhookUrl ?? ""}
+              onChange={(e) => setForm({ ...form, webhookUrl: e.target.value || null })}
+              className={inputClass}
+            />
+          </div>
         </div>
         {webhookSecret && (
           <div className="bg-surface-container-low border-2 border-outline-variant p-3 font-mono text-xs break-all">
@@ -225,7 +218,7 @@ export function StudioSettingsClient({
             disabled={busy}
             className="bg-primary-fixed text-on-primary-fixed px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] disabled:opacity-50"
           >
-            {busy ? "SAVING..." : "SAVE WEBHOOK"}
+            {busy ? "SAVING..." : "SAVE SETTINGS"}
           </button>
           <button
             type="button"
