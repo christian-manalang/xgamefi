@@ -129,11 +129,11 @@ async function main() {
 
   await prisma.shop.upsert({
     where: { studioId: studio.id },
-    update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], layout: { mode: "grid", sections: [{ title: "ALL", itemIds: allItemIds }] }, publishedAt: new Date() },
+    update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], layout: { mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: allItemIds }] }, publishedAt: new Date() },
     create: {
       studioId: studio.id,
       status: "PUBLISHED",
-      layout: { mode: "grid", sections: [{ title: "ALL", itemIds: allItemIds }] },
+      layout: { mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: allItemIds }] },
       theme: GRIDLOCK_BRAND,
       featuredItemIds: [swordSkin.id],
       publishedAt: new Date(),
