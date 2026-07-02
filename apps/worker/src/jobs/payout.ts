@@ -30,25 +30,19 @@ export async function payoutProcessor(job: { data: PayoutJobData }): Promise<{ t
     memo,
   });
 
-  await prisma.$transaction([
-    prisma.ledgerEntry.create({
-      data: {
-        type: "PAYOUT_OUT",
-        orderId: order.id,
-        stellarTxHash: txHash,
-        sourceAddress: env.STELLAR_RECEIVING_ACCOUNT,
-        destAddress: order.studio.payoutWalletAddress,
-        amount: order.netToStudioAmount,
-        assetCode: asset.code,
-        assetIssuer: "issuer" in asset ? asset.issuer : null,
-        status: "CONFIRMED",
-      },
-    }),
-    prisma.order.update({
-      where: { id: order.id },
-      data: { deliveryStatus: "PENDING" },
-    }),
-  ]);
+  await prisma.ledgerEntry.create({
+    data: {
+      type: "PAYOUT_OUT",
+      orderId: order.id,
+      stellarTxHash: txHash,
+      sourceAddress: env.STELLAR_RECEIVING_ACCOUNT,
+      destAddress: order.studio.payoutWalletAddress,
+      amount: order.netToStudioAmount,
+      assetCode: asset.code,
+      assetIssuer: "issuer" in asset ? asset.issuer : null,
+      status: "CONFIRMED",
+    },
+  });
 
   return { txHash };
 }
