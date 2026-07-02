@@ -64,6 +64,7 @@ export function StudioSettingsClient({
     const webhookJson = await webhookRes.json().catch(() => ({}));
     if (webhookRes.ok && webhookJson.data) {
       setWebhookSecret(webhookJson.data.secret);
+      setForm((prev) => ({ ...prev, webhookUrl: webhookJson.data.webhookUrl }));
       webhookOk = true;
     }
 
@@ -176,8 +177,12 @@ export function StudioSettingsClient({
             <input
               value={form.payoutWalletAddress ?? ""}
               onChange={(e) => setForm({ ...form, payoutWalletAddress: e.target.value || null })}
+              placeholder="G... (Stellar public key)"
               className={inputClass}
             />
+            <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+              Stellar address where xGameFi sends automatic payouts. Must start with G and be 56 characters.
+            </p>
           </div>
           <div>
             <label className={labelClass}>INTEGRATION MODE</label>
@@ -189,22 +194,33 @@ export function StudioSettingsClient({
               <option value="API_PULL">API_PULL</option>
               <option value="WEBHOOK_PUSH">WEBHOOK_PUSH</option>
             </select>
+            <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+              API_PULL = xGameFi fetches items from your game API. WEBHOOK_PUSH = you push items to xGameFi.
+            </p>
           </div>
           <div className="md:col-span-2">
             <label className={labelClass}>API BASE URL</label>
             <input
               value={form.apiBaseUrl ?? ""}
               onChange={(e) => setForm({ ...form, apiBaseUrl: e.target.value || null })}
+              placeholder="http://localhost:3000/api/mock-game"
               className={inputClass}
             />
+            <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+              Used in API_PULL mode. xGameFi calls GET {"{apiBaseUrl}/items"}.
+            </p>
           </div>
           <div className="md:col-span-2">
             <label className={labelClass}>WEBHOOK URL</label>
             <input
               value={form.webhookUrl ?? ""}
               onChange={(e) => setForm({ ...form, webhookUrl: e.target.value || null })}
+              placeholder="http://localhost:3000/api/mock-game/webhook"
               className={inputClass}
             />
+            <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+              xGameFi POSTs purchase events here (e.g. purchase.completed).
+            </p>
           </div>
         </div>
         {webhookSecret && (
