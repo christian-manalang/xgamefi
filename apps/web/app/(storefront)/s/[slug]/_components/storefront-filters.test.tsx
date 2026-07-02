@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 
 afterEach(cleanup);
 import { StorefrontFilters } from "./storefront-filters";
@@ -23,10 +23,10 @@ describe("StorefrontFilters", () => {
     mocks.searchParams = new URLSearchParams();
   });
 
-  it("updates the search query on input", () => {
+  it("updates the search query on input", async () => {
     render(<StorefrontFilters categories={["skins"]} rarities={["LEGENDARY"]} />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "sword" } });
-    expect(mocks.replace).toHaveBeenCalledWith("/s/gridlock?q=sword", { scroll: false });
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/s/gridlock?q=sword", { scroll: false }));
   });
 
   it("updates category and resets page", () => {
