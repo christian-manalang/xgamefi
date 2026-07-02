@@ -26,8 +26,8 @@ export function StorefrontGrid({
   const byId = new Map(items.map((i) => [i.id, i]));
   const ordered = orderedIds.map((id) => byId.get(id)).filter((i): i is ItemDto => i !== undefined);
 
-  // Fallback: if layout is empty, render all items.
-  const displayItems = ordered.length ? ordered : items;
+  const hasExplicitLayout = layout.sections.some((s) => s.itemIds.length > 0);
+  const displayItems = hasExplicitLayout ? ordered : items;
   const sorted = [...displayItems].sort((a, b) => Number(featured.has(b.id)) - Number(featured.has(a.id)));
 
   const style = theme.primary ? ({ ["--color-primary-fixed" as string]: theme.primary } as React.CSSProperties) : undefined;

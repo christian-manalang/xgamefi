@@ -37,10 +37,11 @@ async function main() {
       name: "Gridlock Games",
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
-      webhookUrl: "http://localhost:3000/api/health",
+      webhookUrl: "http://localhost:3000/api/mock-game/webhook",
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
-      integrationMode: "WEBHOOK_PUSH",
+      integrationMode: "API_PULL",
+      apiBaseUrl: "http://web:3000/api/mock-game",
     },
     create: {
       name: "Gridlock Games",
@@ -48,11 +49,12 @@ async function main() {
       description: "Anchor partner — Neon Overdrive gear.",
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
-      webhookUrl: "http://localhost:3000/api/health",
+      webhookUrl: "http://localhost:3000/api/mock-game/webhook",
       webhookSecretHash,
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
-      integrationMode: "WEBHOOK_PUSH",
+      integrationMode: "API_PULL",
+      apiBaseUrl: "http://web:3000/api/mock-game",
     },
   });
 
