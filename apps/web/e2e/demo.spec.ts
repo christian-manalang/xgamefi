@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { Horizon, Keypair, TransactionBuilder, Operation, Asset, Memo, Networks, BASE_FEE } from "@stellar/stellar-sdk";
+import Redis from "ioredis";
 import { createHash } from "node:crypto";
+
+const STELLAR_CURSOR_KEY = "stellar-watcher:cursor";
 
 function challengeMessage(walletAddress: string, nonce: string): string {
   return `xGameFi login\naddress: ${walletAddress}\nnonce: ${nonce}`;
@@ -26,6 +29,20 @@ async function fundViaFriendbot(page: import("@playwright/test").Page, publicKey
     await page.waitForTimeout(500);
   }
   throw lastErr ?? new Error("friendbot funding failed");
+}
+
+async function resetStellarWatcherCursor() {
+  const server = new Horizon.Server(process.env.STELLAR_HORIZON_URL!);
+  const account = server.payments().forAccount(process.env.STELLAR_RECEIVING_ACCOUNT!).limit(1).order("desc");
+  const response = await account.call();
+  const cursor = response.records[0]?.paging_token;
+  if (!cursor) return;
+  const redis = new Redis(process.env.REDIS_URL!);
+  try {
+    await redis.set(STELLAR_CURSOR_KEY, cursor);
+  } finally {
+    await redis.quit();
+  }
 }
 
 async function authenticatePlayer(page: import("@playwright/test").Page, keypair: Keypair) {
@@ -78,6 +95,11 @@ test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page })
   await page.goto("/s/gridlock");
   await fundViaFriendbot(page, player.publicKey());
   await authenticatePlayer(page, player);
+
+  // Seed the stellar watcher cursor so it only looks forward from the latest
+  // payment. Without this, a busy receiving account can take minutes to paginate
+  // through historical payments and the demo times out.
+  await resetStellarWatcherCursor();
 
   // 2. Find Sword Skin on the storefront and open checkout in XLM.
   await expect(page.locator("article", { hasText: "Sword Skin" })).toBeVisible();
