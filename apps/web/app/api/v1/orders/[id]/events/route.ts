@@ -49,8 +49,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   return new Response(combined, {
     headers: {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
+      "Content-Encoding": "identity",
+      "X-Accel-Buffering": "no",
     },
   });
 }
