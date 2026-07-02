@@ -119,6 +119,14 @@ async function main() {
     allItemIds.push(item.id);
   }
 
+  // In local dev, reset active items to the seed catalogue so the storefront
+  // stays in sync with the mock game server defaults after every docker compose up.
+  const seedExternalIds = ["sword_skin_01", ...FILLER_ITEMS.map((f) => f.externalId)];
+  await prisma.item.updateMany({
+    where: { studioId: studio.id, externalId: { notIn: seedExternalIds } },
+    data: { isActive: false },
+  });
+
   await prisma.shop.upsert({
     where: { studioId: studio.id },
     update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], layout: { mode: "grid", sections: [{ title: "ALL", itemIds: allItemIds }] }, publishedAt: new Date() },
