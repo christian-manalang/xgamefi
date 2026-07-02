@@ -1,4 +1,4 @@
-const HEARTBEAT_INTERVAL_MS = 3000;
+const HEARTBEAT_INTERVAL_MS = 1500;
 
 export function createSseStream(
   channel: string,
@@ -7,6 +7,7 @@ export function createSseStream(
     on: (event: string, listener: (channel: string, message: string) => void) => unknown;
     off?: (event: string, listener: (channel: string, message: string) => void) => unknown;
   },
+  initialMessage?: string,
 ) {
   const encoder = new TextEncoder();
   let listener: ((channel: string, message: string) => void) | null = null;
@@ -14,6 +15,11 @@ export function createSseStream(
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // Send the current state immediately so a reconnecting client catches up.
+      if (initialMessage) {
+        controller.enqueue(encoder.encode(`data: ${initialMessage}\n\n`));
+      }
+
       await redis.subscribe(channel);
       listener = (recvChannel, message) => {
         if (recvChannel === channel) {
