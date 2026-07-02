@@ -12,7 +12,7 @@ export default async function Page() {
   }
   await requireStudio(studioId);
 
-  const rows = await prisma.item.findMany({ where: { studioId }, orderBy: { createdAt: "asc" } });
+  const rows = await prisma.item.findMany({ where: { studioId, isActive: true }, orderBy: { createdAt: "asc" } });
   const items = rows.map(toItemDto);
 
   return (

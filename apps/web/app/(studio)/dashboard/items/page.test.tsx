@@ -39,4 +39,11 @@ describe("/dashboard/items", () => {
     expect(screen.getByText(/1\.0000000/)).toBeInTheDocument();
     expect(screen.getByText("LEGENDARY")).toBeInTheDocument();
   });
+
+  it("queries only active items", async () => {
+    render(await Page());
+    expect(mocks.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ isActive: true }) }),
+    );
+  });
 });
