@@ -3,7 +3,6 @@ import { createSseStream } from "./sse";
 
 describe("createSseStream", () => {
   it("emits the optional initial message followed by heartbeats", async () => {
-    const encoder = new TextEncoder();
     const listeners = new Map<string, ((channel: string, message: string) => void)[]>();
     let subscribed = false;
 
@@ -12,6 +11,7 @@ describe("createSseStream", () => {
         subscribed = true;
         return `OK`;
       }),
+      unsubscribe: vi.fn(async () => "OK"),
       on: vi.fn((event: string, listener: (channel: string, message: string) => void) => {
         if (!listeners.has(event)) listeners.set(event, []);
         listeners.get(event)!.push(listener);
@@ -21,6 +21,11 @@ describe("createSseStream", () => {
 
     const stream = createSseStream("order-events:test", redis, JSON.stringify({ paymentStatus: "PENDING" }));
     const reader = stream.getReader();
+
+    // The message listener must be attached before subscribing so in-flight
+    // Redis messages are not dropped.
+    expect(redis.on).toHaveBeenCalledWith("message", expect.any(Function));
+    expect(redis.subscribe).toHaveBeenCalledWith("order-events:test");
 
     // Initial message should arrive immediately, before subscription completes.
     const initial = await reader.read();
@@ -47,5 +52,6 @@ describe("createSseStream", () => {
 
     await reader.cancel();
     expect(redis.off).toHaveBeenCalled();
+    expect(redis.unsubscribe).toHaveBeenCalledWith("order-events:test");
   });
 });

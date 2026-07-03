@@ -4,6 +4,7 @@ export function createSseStream(
   channel: string,
   redis: {
     subscribe: (c: string) => Promise<unknown>;
+    unsubscribe?: (c: string) => Promise<unknown>;
     on: (event: string, listener: (channel: string, message: string) => void) => unknown;
     off?: (event: string, listener: (channel: string, message: string) => void) => unknown;
   },
@@ -20,13 +21,22 @@ export function createSseStream(
         controller.enqueue(encoder.encode(`data: ${initialMessage}\n\n`));
       }
 
-      await redis.subscribe(channel);
+      // Attach the listener BEFORE subscribing so any message published while
+      // the subscribe command is in flight is still received.
       listener = (recvChannel, message) => {
         if (recvChannel === channel) {
           controller.enqueue(encoder.encode(`data: ${message}\n\n`));
         }
       };
       redis.on("message", listener);
+
+      try {
+        await redis.subscribe(channel);
+      } catch (err) {
+        console.error(`[sse] subscribe failed for ${channel}`, err);
+        controller.error(err);
+        return;
+      }
 
       // Keep the HTTP connection alive through idle timeouts (e.g. Node's
       // default 5s keep-alive) so short-lived SSE streams don't drop before
@@ -41,6 +51,11 @@ export function createSseStream(
         heartbeat = null;
       }
       if (listener && redis.off) redis.off("message", listener);
+      if (redis.unsubscribe) {
+        redis.unsubscribe(channel).catch((err) => {
+          console.error(`[sse] unsubscribe failed for ${channel}`, err);
+        });
+      }
     },
   });
 

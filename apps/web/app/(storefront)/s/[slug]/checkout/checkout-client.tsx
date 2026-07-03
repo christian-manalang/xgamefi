@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { getAddress, isConnected, signTransaction } from "@stellar/freighter-api";
 import {
@@ -90,13 +90,56 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
     isConnected().then((r) => setFreighterAvailable(r.isConnected)).catch(() => setFreighterAvailable(false));
   }, []);
 
+  const esRef = useRef<EventSource | null>(null);
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    let es: EventSource | null = null;
     const body: Record<string, unknown> = {
       itemId: item.id,
       currency: currency ?? item.price.currency,
     };
     if (referralCode) body.referralCode = referralCode;
+
+    const connectEvents = (orderId: string) => {
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+      if (reconnectRef.current) {
+        clearTimeout(reconnectRef.current);
+        reconnectRef.current = null;
+      }
+
+      const es = new EventSource(`/api/v1/orders/${orderId}/events`, { withCredentials: true });
+      esRef.current = es;
+
+      es.onmessage = (ev) => {
+        try {
+          const payload = JSON.parse(ev.data) as { paymentStatus?: string; deliveryStatus?: string };
+          setOrderStatus((prev) => {
+            const next = { paymentStatus: prev?.paymentStatus ?? "PENDING", deliveryStatus: prev?.deliveryStatus ?? "PENDING", ...payload };
+            return next;
+          });
+          if (payload.deliveryStatus === "DELIVERED") {
+            if (reconnectRef.current) {
+              clearTimeout(reconnectRef.current);
+              reconnectRef.current = null;
+            }
+            es.close();
+            esRef.current = null;
+          }
+        } catch (err) {
+          console.error("checkout events: failed to parse message", ev.data, err);
+        }
+      };
+
+      es.onerror = () => {
+        console.error("checkout events: EventSource dropped, reconnecting");
+        es.close();
+        esRef.current = null;
+        reconnectRef.current = setTimeout(() => connectEvents(orderId), 1000);
+      };
+    };
 
     fetch("/api/v1/checkout/quote", {
       method: "POST",
@@ -116,15 +159,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         setPaymentUri(uri);
         QRCode.toDataURL(uri).then(setQr);
 
-        es = new EventSource(`/api/v1/orders/${data.order.id}/events`, { withCredentials: true });
-        es.onmessage = (ev) => {
-          const payload = JSON.parse(ev.data) as { paymentStatus?: string; deliveryStatus?: string };
-          setOrderStatus((prev) => {
-            const next = { paymentStatus: prev?.paymentStatus ?? "PENDING", deliveryStatus: prev?.deliveryStatus ?? "PENDING", ...payload };
-            return next;
-          });
-          if (payload.deliveryStatus === "DELIVERED") es?.close();
-        };
+        connectEvents(data.order.id);
       })
       .catch((err) => {
         console.error("checkout quote failed", err);
@@ -132,7 +167,14 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       });
 
     return () => {
-      if (es) es.close();
+      if (reconnectRef.current) {
+        clearTimeout(reconnectRef.current);
+        reconnectRef.current = null;
+      }
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
     };
   }, [item.id, item.price.currency, referralCode, currency]);
 
