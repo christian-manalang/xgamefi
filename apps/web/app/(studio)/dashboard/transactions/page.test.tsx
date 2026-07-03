@@ -66,7 +66,7 @@ describe("/dashboard/transactions", () => {
     render(await Page());
     const links = screen.getAllByRole("link");
     expect(links.length).toBeGreaterThan(0);
-    expect(links[0]).toHaveAttribute("href", expect.stringContaining("abc123"));
+    expect(links[0]).toHaveAttribute("href", "https://stellar.expert/explorer/testnet/tx/abc123");
     expect(links[0]).toHaveAttribute("target", "_blank");
   });
 

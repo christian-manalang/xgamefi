@@ -12,7 +12,8 @@ export default async function StudioTransactionsPage() {
   const studioId = principal.studioId;
 
   const initial = await listStudioOrders({ studioId, limit: 50 });
-  const explorerBaseUrl = `https://stellar.expert/explorer/${env.STELLAR_NETWORK}/tx`;
+  const explorerNetwork = env.STELLAR_NETWORK === "pubnet" ? "public" : "testnet";
+  const explorerBaseUrl = `https://stellar.expert/explorer/${explorerNetwork}/tx`;
 
   return (
     <section className="flex flex-col gap-4 p-8">
