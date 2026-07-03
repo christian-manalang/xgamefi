@@ -2,6 +2,18 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## MVP dashboard & storefront gap fill (#129–#134)
+
+Filled the remaining SPEC §6 MVP pages for studios and players.
+
+- **Studio dashboard overview (#129):** `apps/web/app/(studio)/dashboard/page.tsx` — RBAC-gated landing page showing GMV, order count, fees collected, recent orders, and webhook delivery health for the logged-in studio. Added `computeStudioMetrics`/`toStudioMetricsDto` helpers mirroring the admin metrics pattern.
+- **Studio settings (#130):** `apps/web/app/(studio)/dashboard/settings/page.tsx` + `studio-settings-client.tsx` — self-service page for display name/branding (logo, colors), payout wallet, integration mode, `apiBaseUrl`, API key issue/revoke with copy-once warning, webhook URL/secret rotation, signed test event, and delivery log with manual retry.
+- **Studio transactions (#131):** `apps/web/app/(studio)/dashboard/transactions/page.tsx` + `transactions-table.tsx` — paginated, status-filterable list of the studio's orders with Horizon explorer links. Added `GET /api/v1/studios/:id/orders` and `listStudioOrders` query helper.
+- **Studio P2P management (#132):** `apps/web/app/(studio)/dashboard/p2p/page.tsx` — read-only operational view of studio-scoped P2P listings and trades with status filters and pagination. Added `GET /api/v1/studios/:id/p2p` and `getStudioP2PListings`/`getStudioP2PTrades` helpers.
+- **Player purchase history (#133):** `apps/web/app/(storefront)/s/[slug]/me/purchases/page.tsx` + `PurchaseHistoryPanel.tsx` — wallet-gated list of the connected player's orders for a studio. Added `GET /api/v1/shops/:slug/orders/me` and `PlayerOrdersQuery` schema.
+- **P2P sell owned item (#134):** `apps/web/app/(storefront)/s/[slug]/market/sell/page.tsx` + `sell-client.tsx` — owned-item picker and price/currency form wired to `POST /api/v1/p2p/listings`. Added `GET /api/v1/shops/:slug/me/items` and `getMySellableItems` helper, refreshing ownership from the studio's game API.
+- **Navigation:** `apps/web/app/(studio)/dashboard/_components/SideRail.tsx` now links to Transactions and P2P.
+
 ## Storefront wallet connect button (#126)
 
 Added a player-facing wallet connect control to the storefront so authenticated players can complete checkout and P2P flows.
