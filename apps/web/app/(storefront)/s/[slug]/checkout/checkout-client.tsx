@@ -92,6 +92,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
 
   const esRef = useRef<EventSource | null>(null);
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const body: Record<string, unknown> = {
@@ -141,6 +142,39 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       };
     };
 
+    const startPolling = (orderId: string) => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+
+      const POLL_INTERVAL_MS = 2000;
+      const poll = async () => {
+        try {
+          const res = await fetch(`/api/v1/orders/${orderId}`, { credentials: "include" });
+          if (!res.ok) {
+            console.error("checkout poll: failed to fetch order status", res.status);
+            return;
+          }
+          const payload = (await res.json()) as { paymentStatus?: string; deliveryStatus?: string };
+          setOrderStatus((prev) => {
+            const next = { paymentStatus: prev?.paymentStatus ?? "PENDING", deliveryStatus: prev?.deliveryStatus ?? "PENDING", ...payload };
+            return next;
+          });
+          if (payload.deliveryStatus === "DELIVERED" && pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+        } catch (err) {
+          console.error("checkout poll: error fetching order status", err);
+        }
+      };
+
+      pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
+      // Run an initial poll immediately so we catch up if the SSE stream dropped.
+      void poll();
+    };
+
     fetch("/api/v1/checkout/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -160,6 +194,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         QRCode.toDataURL(uri).then(setQr);
 
         connectEvents(data.order.id);
+        startPolling(data.order.id);
       })
       .catch((err) => {
         console.error("checkout quote failed", err);
@@ -170,6 +205,10 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       if (reconnectRef.current) {
         clearTimeout(reconnectRef.current);
         reconnectRef.current = null;
+      }
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
       }
       if (esRef.current) {
         esRef.current.close();
