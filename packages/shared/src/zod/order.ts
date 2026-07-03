@@ -14,3 +14,9 @@ export const StudioOrdersQuery = z
   })
   .strict();
 export type StudioOrdersQueryT = z.infer<typeof StudioOrdersQuery>;
+
+export const PlayerOrdersQuery = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(20),
+});
+export type PlayerOrdersQuery = z.infer<typeof PlayerOrdersQuery>;
