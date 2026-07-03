@@ -38,6 +38,7 @@ async function main() {
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
       webhookUrl: "http://localhost:3000/api/mock-game/webhook",
+      webhookSecretHash,
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
       integrationMode: "API_PULL",

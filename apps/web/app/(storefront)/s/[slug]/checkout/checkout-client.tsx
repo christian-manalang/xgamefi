@@ -157,6 +157,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
             return;
           }
           const payload = (await res.json()) as { paymentStatus?: string; deliveryStatus?: string };
+          console.log("checkout poll: got status", orderId, payload);
           setOrderStatus((prev) => {
             const next = { paymentStatus: prev?.paymentStatus ?? "PENDING", deliveryStatus: prev?.deliveryStatus ?? "PENDING", ...payload };
             return next;
@@ -172,6 +173,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
 
       pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
       // Run an initial poll immediately so we catch up if the SSE stream dropped.
+      console.log("checkout poll: starting", orderId);
       void poll();
     };
 
