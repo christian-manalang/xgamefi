@@ -50,6 +50,35 @@ describe("StorefrontGrid contract", () => {
     expect(cards[0]).toHaveTextContent("Shield");
   });
 
+  it("does not fall back to all items when the layout omits the filtered items", () => {
+    render(
+      <StorefrontGrid
+        layout={{ mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: ["i1"] }] }}
+        theme={{}}
+        featuredItemIds={[]}
+        items={[items[1]]}
+        slug="gridlock"
+      />,
+    );
+    expect(screen.queryByText("Sword Skin")).not.toBeInTheDocument();
+    expect(screen.queryByText("Shield")).not.toBeInTheDocument();
+    expect(screen.getByText(/No items match the current filters/i)).toBeInTheDocument();
+  });
+
+  it("renders all items when the layout has no section itemIds", () => {
+    render(
+      <StorefrontGrid
+        layout={{ mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: [] }] }}
+        theme={{}}
+        featuredItemIds={[]}
+        items={items}
+        slug="gridlock"
+      />,
+    );
+    expect(screen.getByText("Sword Skin")).toBeInTheDocument();
+    expect(screen.getByText("Shield")).toBeInTheDocument();
+  });
+
   it("applies theme primary color via CSS var", () => {
     render(
       <StorefrontGrid layout={{ mode: "list", sections: [] }} theme={{ primary: "#fe00fe" }} featuredItemIds={[]} items={[]} slug="gridlock" />,

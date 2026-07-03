@@ -3,6 +3,12 @@ import { notFound } from "next/navigation";
 import { getPublicItem, getPublishedShop, getStudioBrand } from "../../../../../../lib/catalogue-queries";
 import { brandToStyle } from "../../brand";
 
+function formatAmount(amount: string): string {
+  const n = Number(amount);
+  if (Number.isNaN(n)) return amount;
+  return n.toLocaleString(undefined, { maximumFractionDigits: 7 });
+}
+
 export default async function Page({ params }: { params: Promise<{ slug: string; itemId: string }> }) {
   const { slug, itemId } = await params;
 
@@ -19,6 +25,15 @@ export default async function Page({ params }: { params: Promise<{ slug: string;
   return (
     <main style={brandToStyle(brand)} className="min-h-screen bg-background text-on-background">
       <section className="flex flex-col gap-6 p-8 max-w-[1440px] mx-auto">
+        <div className="flex items-center gap-4">
+          <Link
+            href={`/s/${slug}`}
+            className="flex items-center gap-2 font-mono uppercase tracking-[0.1em] text-[12px] px-4 py-2 border-2 border-outline-variant text-on-surface-variant hover:border-primary-fixed hover:text-primary-fixed transition-colors"
+          >
+            ← Back to Shop
+          </Link>
+        </div>
+
         <nav className="font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface-variant">
           <Link href={`/s/${slug}`} className="hover:text-primary-fixed transition-colors">
             {studioName}
@@ -66,7 +81,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string;
               </span>
               <span className="font-display text-[32px] font-semibold text-primary-fixed"
               >
-                {item.price.amount} <span className="text-[14px] font-mono">{item.price.currency}</span>
+                {formatAmount(item.price.amount)} <span className="text-[14px] font-mono">{item.price.currency}</span>
               </span>
             </div>
 

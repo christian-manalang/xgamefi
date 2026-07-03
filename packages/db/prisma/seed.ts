@@ -37,10 +37,12 @@ async function main() {
       name: "Gridlock Games",
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
-      webhookUrl: "http://localhost:3000/api/health",
+      webhookUrl: "http://localhost:3000/api/mock-game/webhook",
+      webhookSecretHash,
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
-      integrationMode: "WEBHOOK_PUSH",
+      integrationMode: "API_PULL",
+      apiBaseUrl: "http://web:3000/api/mock-game",
     },
     create: {
       name: "Gridlock Games",
@@ -48,11 +50,27 @@ async function main() {
       description: "Anchor partner — Neon Overdrive gear.",
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
-      webhookUrl: "http://localhost:3000/api/health",
+      webhookUrl: "http://localhost:3000/api/mock-game/webhook",
       webhookSecretHash,
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
-      integrationMode: "WEBHOOK_PUSH",
+      integrationMode: "API_PULL",
+      apiBaseUrl: "http://web:3000/api/mock-game",
+    },
+  });
+
+  const studioOwnerPasswordHash = await argon2.hash(env.STUDIO_OWNER_PASSWORD, {
+    type: argon2.argon2id,
+  });
+  await prisma.user.upsert({
+    where: { username: env.STUDIO_OWNER_USERNAME },
+    update: { passwordHash: studioOwnerPasswordHash, role: "STUDIO_OWNER", studioId: studio.id, isActive: true },
+    create: {
+      username: env.STUDIO_OWNER_USERNAME,
+      passwordHash: studioOwnerPasswordHash,
+      role: "STUDIO_OWNER",
+      studioId: studio.id,
+      isActive: true,
     },
   });
 
@@ -79,8 +97,10 @@ async function main() {
     },
   });
 
+  const allItemIds = [swordSkin.id];
+
   for (const f of FILLER_ITEMS) {
-    await prisma.item.upsert({
+    const item = await prisma.item.upsert({
       where: { studioId_externalId: { studioId: studio.id, externalId: f.externalId } },
       update: {},
       create: {
@@ -97,15 +117,24 @@ async function main() {
         syncedAt: new Date(),
       },
     });
+    allItemIds.push(item.id);
   }
+
+  // In local dev, reset active items to the seed catalogue so the storefront
+  // stays in sync with the mock game server defaults after every docker compose up.
+  const seedExternalIds = ["sword_skin_01", ...FILLER_ITEMS.map((f) => f.externalId)];
+  await prisma.item.updateMany({
+    where: { studioId: studio.id, externalId: { notIn: seedExternalIds } },
+    data: { isActive: false },
+  });
 
   await prisma.shop.upsert({
     where: { studioId: studio.id },
-    update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], publishedAt: new Date() },
+    update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], layout: { mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: allItemIds }] }, publishedAt: new Date() },
     create: {
       studioId: studio.id,
       status: "PUBLISHED",
-      layout: { mode: "grid", sections: [{ title: "FEATURED", itemIds: [swordSkin.id] }] },
+      layout: { mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: allItemIds }] },
       theme: GRIDLOCK_BRAND,
       featuredItemIds: [swordSkin.id],
       publishedAt: new Date(),
@@ -113,7 +142,7 @@ async function main() {
   });
 
   console.log(
-    `Seed complete: admin=${admin.username} studio=${studio.slug} swordSkin=${swordSkin.id} (${FILLER_ITEMS.length} filler items)`,
+    `Seed complete: admin=${admin.username} studio=${studio.slug} swordSkin=${swordSkin.id} (${FILLER_ITEMS.length} filler items) studioOwner=${env.STUDIO_OWNER_USERNAME}`,
   );
 }
 

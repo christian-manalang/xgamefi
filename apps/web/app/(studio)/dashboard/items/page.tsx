@@ -2,6 +2,7 @@ import { prisma } from "@xgamefi/db";
 import { toItemDto } from "@xgamefi/shared/dto";
 import { requireStudio, requirePrincipal } from "../../../../lib/auth/guards";
 import { ItemRow } from "../_components/item-row";
+import { SyncButton } from "./_components/sync-button";
 
 export default async function Page() {
   const principal = await requirePrincipal();
@@ -11,15 +12,20 @@ export default async function Page() {
   }
   await requireStudio(studioId);
 
-  const rows = await prisma.item.findMany({ where: { studioId }, orderBy: { createdAt: "asc" } });
+  const rows = await prisma.item.findMany({ where: { studioId, isActive: true }, orderBy: { createdAt: "asc" } });
   const items = rows.map(toItemDto);
 
   return (
     <section className="flex flex-col gap-4 p-8">
-      <h1 className="font-display text-[48px] leading-[52px] font-bold tracking-[-0.02em] text-on-surface">Items</h1>
-      <p className="font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface-variant">
-        SYNCED FROM GAME API · {items.length} TOTAL
-      </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="font-display text-[48px] leading-[52px] font-bold tracking-[-0.02em] text-on-surface">Items</h1>
+          <p className="font-mono uppercase tracking-[0.1em] text-[12px] text-on-surface-variant">
+            SYNCED FROM GAME API · {items.length} TOTAL
+          </p>
+        </div>
+        <SyncButton studioId={studioId} />
+      </div>
       <div className="flex flex-col gap-3">
         {items.map((item) => (
           <ItemRow key={item.id} item={item} />

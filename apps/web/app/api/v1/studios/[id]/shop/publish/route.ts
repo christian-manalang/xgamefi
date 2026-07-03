@@ -16,8 +16,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
 
   const current = await prisma.shop.findUnique({ where: { studioId }, select: { draftLayout: true } });
+  console.log(`[shop/publish POST] studioId=${studioId} draftLayout=`, JSON.stringify(current?.draftLayout));
   const parsed = ShopLayoutSchema.safeParse(current?.draftLayout ?? null);
   if (!parsed.success) {
+    console.error("[shop/publish POST] draftLayout invalid:", JSON.stringify(parsed.error.flatten()));
     return Response.json({ error: "no valid draft to publish" }, { status: 409 });
   }
 

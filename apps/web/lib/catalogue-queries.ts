@@ -20,10 +20,19 @@ export async function getShopItems(
   if (query.rarity) where.rarity = query.rarity;
   if (query.featured) where.id = { in: shop.featuredItemIds };
 
+  const orderBy: Prisma.ItemOrderByWithRelationInput[] =
+    query.sort === "price_asc"
+      ? [{ priceAmount: "asc" }]
+      : query.sort === "price_desc"
+        ? [{ priceAmount: "desc" }]
+        : query.sort === "newest"
+          ? [{ createdAt: "desc" }]
+          : [{ createdAt: "asc" }];
+
   const [rows, total] = await Promise.all([
     prisma.item.findMany({
       where,
-      orderBy: { createdAt: "asc" },
+      orderBy,
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
     }),

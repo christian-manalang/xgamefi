@@ -76,7 +76,7 @@ describe("/s/[slug]/item/[itemId]", () => {
 
     expect(screen.getByRole("heading", { name: "Sword Skin" })).toBeInTheDocument();
     expect(screen.getByText(/A legendary blade skin/)).toBeInTheDocument();
-    expect(screen.getByText(/1\.0000000/)).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.textContent === "1 USDT")).toBeInTheDocument();
     expect(screen.getByText("STOCK 100")).toBeInTheDocument();
     expect(screen.getByText("Gridlock Games")).toBeInTheDocument();
   });

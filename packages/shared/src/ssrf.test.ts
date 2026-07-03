@@ -49,4 +49,16 @@ describe("assertPublicUrl", () => {
     expect(url.hostname).toBe("example.com");
     expect((url as URL & { resolvedIp?: string }).resolvedIp).toBe("93.184.216.34");
   });
+
+  it("accepts http://localhost for local development", async () => {
+    const url = await assertPublicUrl("http://localhost:3000/api/mock-game", resolver({ localhost: ["127.0.0.1"] }));
+    expect(url.hostname).toBe("localhost");
+    expect((url as URL & { resolvedIp?: string }).resolvedIp).toBe("127.0.0.1");
+  });
+
+  it("accepts http:// for single-label internal hostnames (e.g. Docker service names)", async () => {
+    const url = await assertPublicUrl("http://web:3000/api/mock-game", resolver({ web: ["172.20.0.3"] }));
+    expect(url.hostname).toBe("web");
+    expect((url as URL & { resolvedIp?: string }).resolvedIp).toBe("172.20.0.3");
+  });
 });

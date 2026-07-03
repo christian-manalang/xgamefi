@@ -7,10 +7,10 @@ const stellarAddress = z
 export const AdminSettingsInput = z
   .object({
     defaultFeeBps: z.number().int().min(0).max(10000).optional(),
-    receivingAccount: stellarAddress.optional(),
-    payoutSignerPublic: stellarAddress.optional(),
+    receivingAccount: stellarAddress.nullable().optional(),
+    payoutSignerPublic: stellarAddress.nullable().optional(),
     usdAssetCode: z.string().min(1).max(12).optional(),
-    usdAssetIssuer: stellarAddress.optional(),
+    usdAssetIssuer: stellarAddress.nullable().optional(),
     network: z.enum(["testnet", "pubnet"]).optional(),
   })
   .strict();
@@ -46,10 +46,10 @@ export const StudioPatchInput = z
     name: z.string().min(1).optional(),
     description: z.string().optional(),
     brand: z.record(z.any()).optional(),
-    payoutWalletAddress: stellarAddress.optional(),
+    payoutWalletAddress: stellarAddress.nullable().optional(),
     platformFeeBps: z.number().int().min(0).max(10000).optional(),
-    integrationMode: z.enum(["API_PULL", "WEBHOOK_PUSH"]).optional(),
-    apiBaseUrl: z.string().url().optional(),
+    integrationMode: z.enum(["API_PULL", "WEBHOOK_PUSH"]).nullable().optional(),
+    apiBaseUrl: z.string().url().nullable().optional(),
     status: z.enum(["ACTIVE", "SUSPENDED", "PENDING"]).optional(),
   })
   .strict();
@@ -86,4 +86,13 @@ export const WebhookTestInput = z
   .strict();
 
 export type WebhookTestInputT = z.infer<typeof WebhookTestInput>;
+
+export const AdminUserUpdateInput = z
+  .object({
+    role: z.enum(["ADMIN", "STUDIO_OWNER", "STUDIO_MEMBER"]).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .strict();
+
+export type AdminUserUpdateInputT = z.infer<typeof AdminUserUpdateInput>;
 

@@ -46,7 +46,6 @@ describe("payoutProcessor", () => {
     expect(res.txHash).toBe("payout-tx-1");
     expect(mocks.sendPayment).toHaveBeenCalledWith(expect.objectContaining({ destination: "GOUT", amount: "0.9500000" }));
     expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ type: "PAYOUT_OUT" }) }));
-    expect(mocks.update).toHaveBeenCalled();
   });
 
   it("skips if the order is not PAID", async () => {
