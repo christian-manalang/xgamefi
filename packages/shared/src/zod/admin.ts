@@ -45,7 +45,8 @@ export const StudioPatchInput = z
   .object({
     name: z.string().min(1).optional(),
     description: z.string().optional(),
-    brand: z.record(z.any()).optional(),
+    logoUrl: z.string().url().nullable().optional(),
+    brand: z.record(z.any()).nullable().optional(),
     payoutWalletAddress: stellarAddress.nullable().optional(),
     platformFeeBps: z.number().int().min(0).max(10000).optional(),
     integrationMode: z.enum(["API_PULL", "WEBHOOK_PUSH"]).nullable().optional(),

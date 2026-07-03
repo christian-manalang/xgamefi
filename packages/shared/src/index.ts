@@ -22,6 +22,7 @@ export type {
   AdminMetricsDto,
   AdminLedgerEntryDto,
   AdminStudioDto,
+  StudioBrandDto,
   AdminUserDto,
 } from "./dto/admin";
 export { toApiKeyDto } from "./dto/studioKey";
