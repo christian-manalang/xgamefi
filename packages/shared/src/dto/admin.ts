@@ -1,5 +1,5 @@
 import type { PlatformSettings } from "../settings";
-import type { PlatformMetrics } from "../metrics";
+import type { PlatformMetrics, StudioMetrics } from "../metrics";
 import { toStellarAmount } from "../money";
 
 export type AdminSettingsDto = {
@@ -55,6 +55,47 @@ export function toAdminMetricsDto(m: PlatformMetrics): AdminMetricsDto {
       deliveryStatus: o.deliveryStatus,
       createdAt: o.createdAt.toISOString(),
     })),
+  };
+}
+
+export type StudioMetricsDto = {
+  gmv: string;
+  feesCollected: string;
+  orderCount: number;
+  recentOrders: {
+    id: string;
+    studioId: string;
+    itemName: string;
+    grossAmount: string;
+    currency: string;
+    paymentStatus: string;
+    deliveryStatus: string;
+    createdAt: string;
+  }[];
+  webhookHealth: {
+    total: number;
+    delivered: number;
+    failed: number;
+    successRate: number;
+  };
+};
+
+export function toStudioMetricsDto(m: StudioMetrics): StudioMetricsDto {
+  return {
+    gmv: toStellarAmount(m.gmv),
+    feesCollected: toStellarAmount(m.feesCollected),
+    orderCount: m.orderCount,
+    recentOrders: m.recentOrders.map((o) => ({
+      id: o.id,
+      studioId: o.studioId,
+      itemName: o.itemName,
+      grossAmount: toStellarAmount(o.grossAmount),
+      currency: o.currency,
+      paymentStatus: o.paymentStatus,
+      deliveryStatus: o.deliveryStatus,
+      createdAt: o.createdAt.toISOString(),
+    })),
+    webhookHealth: m.webhookHealth,
   };
 }
 
