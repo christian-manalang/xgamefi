@@ -1,9 +1,59 @@
 import { prisma, Prisma } from "@xgamefi/db";
-import { assertOwnsItem } from "@xgamefi/shared/p2p/ownership";
+import { assertOwnsItem, refreshOwnership } from "@xgamefi/shared/p2p/ownership";
 import { toP2PListingDto, toP2PTradeDto, type P2PListingDto, type P2PTradeDto } from "@xgamefi/shared/dto";
 import { feeAmount, netAmount, toStellarAmount } from "@xgamefi/shared/money";
 import { buildPaymentXdr, type Asset } from "@xgamefi/shared/stellar";
 import { env } from "@xgamefi/config/env";
+
+export type SellableItem = {
+  itemId: string;
+  name: string;
+  imageUrl: string | null;
+  rarity: string | null;
+  category: string | null;
+  quantity: number;
+};
+
+export async function getMySellableItems(slug: string, playerId: string): Promise<SellableItem[]> {
+  const shop = await prisma.shop.findFirst({
+    where: { studio: { slug }, status: "PUBLISHED" },
+    select: { studioId: true },
+  });
+  if (!shop) return [];
+
+  const ownerships = await prisma.itemOwnership.findMany({
+    where: {
+      playerId,
+      studioId: shop.studioId,
+      quantity: { gt: 0 },
+      lockedForListingId: null,
+    },
+    include: { item: true },
+  });
+
+  await Promise.all(
+    ownerships.map((o) => refreshOwnership({ studioId: shop.studioId, playerId, itemId: o.itemId })),
+  );
+
+  const refreshed = await prisma.itemOwnership.findMany({
+    where: {
+      playerId,
+      studioId: shop.studioId,
+      quantity: { gt: 0 },
+      lockedForListingId: null,
+    },
+    include: { item: true },
+  });
+
+  return refreshed.map((o) => ({
+    itemId: o.itemId,
+    name: o.item.name,
+    imageUrl: o.item.imageUrl,
+    rarity: o.item.rarity,
+    category: o.item.category,
+    quantity: o.quantity,
+  }));
+}
 
 export async function createListing(input: {
   sellerPlayerId: string;
