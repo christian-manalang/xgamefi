@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import type { AdminStudioDto, ApiKeyDto, WebhookDeliveryDto } from "@xgamefi/shared/dto";
+import { useState, useCallback } from "react";
+import type { AdminStudioDto, ApiKeyDto, WebhookDeliveryDto, StudioBrandDto } from "@xgamefi/shared";
+
+type StudioForm = AdminStudioDto & {
+  brand: StudioBrandDto | null;
+};
 
 export function StudioSettingsClient({
   studio: initialStudio,
@@ -12,18 +16,33 @@ export function StudioSettingsClient({
   apiKeys: ApiKeyDto[];
   initialDeliveries: WebhookDeliveryDto[];
 }) {
-  const [studio, setStudio] = useState(initialStudio);
-  const [form, setForm] = useState(initialStudio);
+  const [studio, setStudio] = useState<StudioForm>(initialStudio as StudioForm);
+  const [form, setForm] = useState<StudioForm>(initialStudio as StudioForm);
   const [keys, setKeys] = useState(initialKeys);
   const [deliveries, setDeliveries] = useState(initialDeliveries);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [webhookSecret, setWebhookSecret] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const inputClass =
     "w-full bg-surface-container-low border-2 border-outline-variant text-on-surface font-mono uppercase tracking-[0.05em] text-[12px] px-3 py-2 outline-none focus:border-primary-fixed";
   const labelClass = "font-mono text-xs tracking-[0.1em] text-on-surface-variant";
+  const buttonPrimaryClass =
+    "bg-primary-fixed text-on-primary-fixed px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] disabled:opacity-50 active:scale-95";
+  const buttonSecondaryClass =
+    "border-2 border-outline-variant px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] hover:border-primary-fixed disabled:opacity-50 active:scale-95";
+
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(label);
+      setTimeout(() => setCopied((current) => (current === label ? null : current)), 2000);
+    } catch {
+      setMessage("copy failed");
+    }
+  }, []);
 
   async function saveAll(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +53,8 @@ export function StudioSettingsClient({
     const profilePatch = {
       name: form.name,
       description: form.description,
+      logoUrl: form.logoUrl,
+      brand: form.brand,
       payoutWalletAddress: form.payoutWalletAddress,
       integrationMode: form.integrationMode,
       apiBaseUrl: form.apiBaseUrl,
@@ -72,9 +93,9 @@ export function StudioSettingsClient({
     if (profileOk && webhookOk) {
       setMessage("saved");
     } else if (profileOk) {
-      setMessage("profile saved — webhook failed: " + (profileJson.error?.message ?? webhookJson.error?.message ?? "unknown"));
+      setMessage("profile saved — webhook failed: " + (webhookJson.error?.message ?? "unknown"));
     } else if (webhookOk) {
-      setMessage("webhook saved — profile failed: " + (webhookJson.error?.message ?? profileJson.error?.message ?? "unknown"));
+      setMessage("webhook saved — profile failed: " + (profileJson.error?.message ?? "unknown"));
     } else {
       setMessage(profileJson.error?.message ?? webhookJson.error?.message ?? "failed");
     }
@@ -92,6 +113,7 @@ export function StudioSettingsClient({
     setBusy(false);
     if (res.ok) {
       setMessage("test webhook queued");
+      if (json.data) setDeliveries((prev) => [json.data, ...prev]);
     } else {
       setMessage(json.error?.message ?? "test failed");
     }
@@ -111,7 +133,7 @@ export function StudioSettingsClient({
     if (res.ok && json.data) {
       setNewKey(json.data.key);
       setKeys((prev) => [json.data, ...prev]);
-      setMessage("API key issued — copy it now");
+      setMessage("API key issued — copy it now, it will not be shown again");
     } else {
       setMessage(json.error?.message ?? "failed");
     }
@@ -138,6 +160,12 @@ export function StudioSettingsClient({
     if (res.ok) setMessage("delivery retry queued");
   }
 
+  function updateBrand(patch: Partial<StudioBrandDto>) {
+    setForm((prev) => ({ ...prev, brand: { ...(prev.brand ?? {}), ...patch } }));
+  }
+
+  const brand = form.brand ?? {};
+
   return (
     <section className="space-y-12">
       <header>
@@ -152,64 +180,138 @@ export function StudioSettingsClient({
               ? "border-primary-fixed text-primary-fixed"
               : "border-error text-error"
           }`}
+          role="status"
+          aria-live="polite"
         >
           {message}
         </div>
       )}
 
-      <form onSubmit={saveAll} className="space-y-6 max-w-2xl">
-        <h2 className="font-mono text-xs tracking-[0.1em] text-on-surface-variant">PROFILE</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
-            <label className={labelClass}>NAME</label>
-            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
+      <form onSubmit={saveAll} className="space-y-10 max-w-2xl">
+        <div className="space-y-6">
+          <h2 className={labelClass}>PROFILE</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className={labelClass}>NAME</label>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className={labelClass}>DESCRIPTION</label>
+              <textarea
+                value={form.description ?? ""}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className={`${inputClass} min-h-[80px]`}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className={labelClass}>PAYOUT WALLET ADDRESS</label>
+              <input
+                value={form.payoutWalletAddress ?? ""}
+                onChange={(e) => setForm({ ...form, payoutWalletAddress: e.target.value || null })}
+                placeholder="G... (Stellar public key)"
+                className={inputClass}
+              />
+              <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+                Stellar address where xGameFi sends automatic payouts. Must start with G and be 56 characters.
+              </p>
+            </div>
+            <div>
+              <label className={labelClass}>INTEGRATION MODE</label>
+              <select
+                value={form.integrationMode}
+                onChange={(e) => setForm({ ...form, integrationMode: e.target.value as "API_PULL" | "WEBHOOK_PUSH" })}
+                className={inputClass}
+              >
+                <option value="API_PULL">API_PULL</option>
+                <option value="WEBHOOK_PUSH">WEBHOOK_PUSH</option>
+              </select>
+              <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+                API_PULL = xGameFi fetches items from your game API. WEBHOOK_PUSH = you push items to xGameFi.
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <label className={labelClass}>API BASE URL</label>
+              <input
+                value={form.apiBaseUrl ?? ""}
+                onChange={(e) => setForm({ ...form, apiBaseUrl: e.target.value || null })}
+                placeholder="http://localhost:3000/api/mock-game"
+                className={inputClass}
+              />
+              <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+                Used in API_PULL mode. xGameFi calls GET {"{apiBaseUrl}/items"}.
+              </p>
+            </div>
           </div>
-          <div className="md:col-span-2">
-            <label className={labelClass}>DESCRIPTION</label>
-            <textarea
-              value={form.description ?? ""}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className={`${inputClass} min-h-[80px]`}
-            />
+        </div>
+
+        <div className="space-y-6">
+          <h2 className={labelClass}>BRANDING</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className={labelClass}>LOGO URL</label>
+              <input
+                value={form.logoUrl ?? ""}
+                onChange={(e) => setForm({ ...form, logoUrl: e.target.value || null })}
+                placeholder="https://cdn.example.com/logo.png"
+                className={inputClass}
+              />
+              {form.logoUrl && (
+                <div className="mt-3 border-2 border-outline-variant p-2 inline-block">
+                  <img src={form.logoUrl} alt="Studio logo preview" className="h-16 w-auto object-contain" />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className={labelClass}>PRIMARY COLOR</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={brand.primary ?? "#c3f400"}
+                  onChange={(e) => updateBrand({ primary: e.target.value })}
+                  className="h-10 w-10 bg-transparent border-2 border-outline-variant cursor-pointer"
+                  aria-label="Primary brand color"
+                />
+                <input
+                  value={brand.primary ?? ""}
+                  onChange={(e) => updateBrand({ primary: e.target.value })}
+                  placeholder="#c3f400"
+                  className={`${inputClass} flex-1`}
+                />
+              </div>
+              <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+                Hero accent used for CTAs and focus states.
+              </p>
+            </div>
+            <div>
+              <label className={labelClass}>ACCENT COLOR</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={brand.accent ?? "#ffabf3"}
+                  onChange={(e) => updateBrand({ accent: e.target.value })}
+                  className="h-10 w-10 bg-transparent border-2 border-outline-variant cursor-pointer"
+                  aria-label="Accent brand color"
+                />
+                <input
+                  value={brand.accent ?? ""}
+                  onChange={(e) => updateBrand({ accent: e.target.value })}
+                  placeholder="#ffabf3"
+                  className={`${inputClass} flex-1`}
+                />
+              </div>
+              <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
+                Secondary accent used for hover and highlights.
+              </p>
+            </div>
           </div>
-          <div className="md:col-span-2">
-            <label className={labelClass}>PAYOUT WALLET ADDRESS</label>
-            <input
-              value={form.payoutWalletAddress ?? ""}
-              onChange={(e) => setForm({ ...form, payoutWalletAddress: e.target.value || null })}
-              placeholder="G... (Stellar public key)"
-              className={inputClass}
-            />
-            <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
-              Stellar address where xGameFi sends automatic payouts. Must start with G and be 56 characters.
-            </p>
-          </div>
-          <div>
-            <label className={labelClass}>INTEGRATION MODE</label>
-            <select
-              value={form.integrationMode}
-              onChange={(e) => setForm({ ...form, integrationMode: e.target.value as "API_PULL" | "WEBHOOK_PUSH" })}
-              className={inputClass}
-            >
-              <option value="API_PULL">API_PULL</option>
-              <option value="WEBHOOK_PUSH">WEBHOOK_PUSH</option>
-            </select>
-            <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
-              API_PULL = xGameFi fetches items from your game API. WEBHOOK_PUSH = you push items to xGameFi.
-            </p>
-          </div>
-          <div className="md:col-span-2">
-            <label className={labelClass}>API BASE URL</label>
-            <input
-              value={form.apiBaseUrl ?? ""}
-              onChange={(e) => setForm({ ...form, apiBaseUrl: e.target.value || null })}
-              placeholder="http://localhost:3000/api/mock-game"
-              className={inputClass}
-            />
-            <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
-              Used in API_PULL mode. xGameFi calls GET {"{apiBaseUrl}/items"}.
-            </p>
-          </div>
+        </div>
+
+        <div className="space-y-6">
+          <h2 className={labelClass}>WEBHOOK</h2>
           <div className="md:col-span-2">
             <label className={labelClass}>WEBHOOK URL</label>
             <input
@@ -219,45 +321,57 @@ export function StudioSettingsClient({
               className={inputClass}
             />
             <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant mt-1">
-              xGameFi POSTs purchase events here (e.g. purchase.completed).
+              xGameFi POSTs purchase events here (e.g. purchase.completed). Saving rotates the signing secret.
             </p>
           </div>
+          {webhookSecret && (
+            <div className="bg-surface-container-low border-2 border-primary-fixed p-3 space-y-2">
+              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary-fixed">
+                NEW WEBHOOK SECRET — COPY NOW
+              </p>
+              <code className="block font-mono text-xs break-all text-on-surface">{webhookSecret}</code>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(webhookSecret, "secret")}
+                className="text-[10px] uppercase tracking-[0.1em] font-mono border-2 border-outline-variant px-2 py-1 hover:border-primary-fixed"
+              >
+                {copied === "secret" ? "COPIED" : "COPY"}
+              </button>
+            </div>
+          )}
         </div>
-        {webhookSecret && (
-          <div className="bg-surface-container-low border-2 border-outline-variant p-3 font-mono text-xs break-all">
-            {webhookSecret}
-          </div>
-        )}
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={busy}
-            className="bg-primary-fixed text-on-primary-fixed px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] disabled:opacity-50"
-          >
+
+        <div className="flex flex-wrap gap-3">
+          <button type="submit" disabled={busy} className={buttonPrimaryClass}>
             {busy ? "SAVING..." : "SAVE SETTINGS"}
           </button>
-          <button
-            type="button"
-            onClick={testWebhook}
-            disabled={busy}
-            className="border-2 border-outline-variant px-6 py-3 font-mono uppercase tracking-[0.1em] text-[12px] hover:border-primary-fixed disabled:opacity-50"
-          >
+          <button type="button" onClick={testWebhook} disabled={busy} className={buttonSecondaryClass}>
             TEST WEBHOOK
           </button>
         </div>
       </form>
 
       <div className="space-y-4">
-        <h2 className="font-mono text-xs tracking-[0.1em] text-on-surface-variant">API KEYS</h2>
+        <h2 className={labelClass}>API KEYS</h2>
         {newKey && (
-          <div className="bg-surface-container-low border-2 border-primary-fixed p-3 font-mono text-xs break-all text-primary-fixed">
-            {newKey}
+          <div className="bg-surface-container-low border-2 border-primary-fixed p-3 space-y-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary-fixed">
+              NEW API KEY — COPY NOW. IT WILL NOT BE SHOWN AGAIN.
+            </p>
+            <code className="block font-mono text-xs break-all text-on-surface">{newKey}</code>
+            <button
+              type="button"
+              onClick={() => copyToClipboard(newKey, "apikey")}
+              className="text-[10px] uppercase tracking-[0.1em] font-mono border-2 border-outline-variant px-2 py-1 hover:border-primary-fixed"
+            >
+              {copied === "apikey" ? "COPIED" : "COPY"}
+            </button>
           </div>
         )}
         <button
           onClick={issueKey}
           disabled={busy}
-          className="border-2 border-outline-variant px-4 py-2 font-mono uppercase tracking-[0.1em] text-[12px] hover:border-primary-fixed disabled:opacity-50"
+          className={buttonSecondaryClass}
         >
           ISSUE API KEY
         </button>
@@ -285,7 +399,7 @@ export function StudioSettingsClient({
       </div>
 
       <div className="space-y-4">
-        <h2 className="font-mono text-xs tracking-[0.1em] text-on-surface-variant">RECENT WEBHOOK DELIVERIES</h2>
+        <h2 className={labelClass}>RECENT WEBHOOK DELIVERIES</h2>
         <ul className="divide-y divide-outline-variant font-mono text-sm">
           {deliveries.map((d) => (
             <li key={d.id} className="py-3 grid grid-cols-1 md:grid-cols-5 gap-2 items-center">

@@ -134,7 +134,9 @@ test("Phase 3 demo: scan QR, pay 1 XLM, see delivered via SSE", async ({ page })
   expect(submitRes.successful).toBe(true);
 
   // 6. Assert SSE status reaches PAID / DELIVERED.
-  await expect(page.locator("body")).toContainText(/PAID/, { timeout: 60_000 });
+  // The UI may receive the final state atomically (skipping PAID) when the
+  // HTTP polling fallback fires, so accept either intermediate state first.
+  await expect(page.locator("body")).toContainText(/PAID|DELIVERED/, { timeout: 60_000 });
   await expect(page.locator("body")).toContainText(/DELIVERED/, { timeout: 60_000 });
   console.log("[test] reached PAID/DELIVERED", orderId);
 });

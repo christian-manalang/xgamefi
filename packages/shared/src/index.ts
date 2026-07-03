@@ -16,13 +16,16 @@ export {
   toAdminLedgerEntryDto,
   toAdminStudioDto,
   toAdminUserDto,
+  toStudioMetricsDto,
 } from "./dto/admin";
 export type {
   AdminSettingsDto,
   AdminMetricsDto,
   AdminLedgerEntryDto,
   AdminStudioDto,
+  StudioBrandDto,
   AdminUserDto,
+  StudioMetricsDto,
 } from "./dto/admin";
 export { toApiKeyDto } from "./dto/studioKey";
 export type { ApiKeyDto } from "./dto/studioKey";

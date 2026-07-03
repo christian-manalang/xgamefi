@@ -1,5 +1,5 @@
 import type { PlatformSettings } from "../settings";
-import type { PlatformMetrics } from "../metrics";
+import type { PlatformMetrics, StudioMetrics } from "../metrics";
 import { toStellarAmount } from "../money";
 
 export type AdminSettingsDto = {
@@ -58,6 +58,47 @@ export function toAdminMetricsDto(m: PlatformMetrics): AdminMetricsDto {
   };
 }
 
+export type StudioMetricsDto = {
+  gmv: string;
+  feesCollected: string;
+  orderCount: number;
+  recentOrders: {
+    id: string;
+    studioId: string;
+    itemName: string;
+    grossAmount: string;
+    currency: string;
+    paymentStatus: string;
+    deliveryStatus: string;
+    createdAt: string;
+  }[];
+  webhookHealth: {
+    total: number;
+    delivered: number;
+    failed: number;
+    successRate: number;
+  };
+};
+
+export function toStudioMetricsDto(m: StudioMetrics): StudioMetricsDto {
+  return {
+    gmv: toStellarAmount(m.gmv),
+    feesCollected: toStellarAmount(m.feesCollected),
+    orderCount: m.orderCount,
+    recentOrders: m.recentOrders.map((o) => ({
+      id: o.id,
+      studioId: o.studioId,
+      itemName: o.itemName,
+      grossAmount: toStellarAmount(o.grossAmount),
+      currency: o.currency,
+      paymentStatus: o.paymentStatus,
+      deliveryStatus: o.deliveryStatus,
+      createdAt: o.createdAt.toISOString(),
+    })),
+    webhookHealth: m.webhookHealth,
+  };
+}
+
 export type AdminLedgerEntryDto = {
   id: string;
   type: string;
@@ -106,11 +147,23 @@ export function toAdminLedgerEntryDto(row: {
   };
 }
 
+export type StudioBrandDto = {
+  primary?: string;
+  accent?: string;
+  background?: string;
+  surface?: string;
+  displayFont?: string;
+  monoFont?: string;
+  [key: string]: unknown;
+};
+
 export type AdminStudioDto = {
   id: string;
   name: string;
   slug: string;
   description: string | null;
+  logoUrl: string | null;
+  brand: StudioBrandDto | null;
   status: string;
   platformFeeBps: number;
   payoutWalletAddress: string | null;
@@ -125,6 +178,8 @@ export function toAdminStudioDto(row: {
   name: string;
   slug: string;
   description: string | null;
+  logoUrl: string | null;
+  brand: unknown;
   status: string;
   platformFeeBps: number;
   payoutWalletAddress: string | null;
@@ -138,6 +193,8 @@ export function toAdminStudioDto(row: {
     name: row.name,
     slug: row.slug,
     description: row.description,
+    logoUrl: row.logoUrl,
+    brand: row.brand ? (row.brand as StudioBrandDto) : null,
     status: row.status,
     platformFeeBps: row.platformFeeBps,
     payoutWalletAddress: row.payoutWalletAddress,
