@@ -1,13 +1,15 @@
 import { prisma } from "@xgamefi/db";
-import { requirePrincipal } from "@/lib/auth";
+import { getPrincipal, requireStudio } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { toAdminStudioDto, toApiKeyDto, toWebhookDeliveryDto } from "@xgamefi/shared";
 import { StudioSettingsClient } from "./_components/studio-settings-client";
 
 export default async function StudioSettingsPage() {
-  const principal = await requirePrincipal();
-  if (principal.kind !== "user" || !principal.studioId) redirect("/login");
+  const principal = await getPrincipal();
+  if (!principal || principal.kind !== "user" || !principal.studioId) redirect("/login");
   const studioId = principal.studioId;
+
+  await requireStudio(studioId);
 
   const [studio, apiKeys, deliveries] = await Promise.all([
     prisma.studio.findUnique({ where: { id: studioId } }),

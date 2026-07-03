@@ -147,11 +147,23 @@ export function toAdminLedgerEntryDto(row: {
   };
 }
 
+export type StudioBrandDto = {
+  primary?: string;
+  accent?: string;
+  background?: string;
+  surface?: string;
+  displayFont?: string;
+  monoFont?: string;
+  [key: string]: unknown;
+};
+
 export type AdminStudioDto = {
   id: string;
   name: string;
   slug: string;
   description: string | null;
+  logoUrl: string | null;
+  brand: StudioBrandDto | null;
   status: string;
   platformFeeBps: number;
   payoutWalletAddress: string | null;
@@ -166,6 +178,8 @@ export function toAdminStudioDto(row: {
   name: string;
   slug: string;
   description: string | null;
+  logoUrl: string | null;
+  brand: unknown;
   status: string;
   platformFeeBps: number;
   payoutWalletAddress: string | null;
@@ -179,6 +193,8 @@ export function toAdminStudioDto(row: {
     name: row.name,
     slug: row.slug,
     description: row.description,
+    logoUrl: row.logoUrl,
+    brand: row.brand ? (row.brand as StudioBrandDto) : null,
     status: row.status,
     platformFeeBps: row.platformFeeBps,
     payoutWalletAddress: row.payoutWalletAddress,

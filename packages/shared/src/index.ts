@@ -23,6 +23,7 @@ export type {
   AdminMetricsDto,
   AdminLedgerEntryDto,
   AdminStudioDto,
+  StudioBrandDto,
   AdminUserDto,
   StudioMetricsDto,
 } from "./dto/admin";
