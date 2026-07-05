@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
 import { RemoteItem, RemoteItemsSchema } from "@xgamefi/shared/zod/catalogue";
 
+function generatedImage(prompt: string, seed: number): string {
+  const encoded = encodeURIComponent(prompt);
+  return `https://image.pollinations.ai/prompt/${encoded}?width=400&height=400&seed=${seed}&nologo=true`;
+}
+
 const MOCK_ITEMS: RemoteItem[] = [
   {
     externalId: "sword_skin_01",
     name: "Sword Skin",
-    description: "The demo Sword Skin — acid-lime rim light.",
-    imageUrl: "https://picsum.photos/seed/swordskin/400/400",
+    description: "Acid-lime rim light pulses along the edge of this legendary blade.",
+    imageUrl: generatedImage(
+      "cyberpunk neon sword game item icon, glowing acid green edge, black background, detailed sci-fi digital art, centered",
+      101,
+    ),
     price: "1.00",
     currency: "USDT",
     stock: null,
@@ -15,8 +23,11 @@ const MOCK_ITEMS: RemoteItem[] = [
   {
     externalId: "phase_core_02",
     name: "Phase Core",
-    description: "Overclocked phase core.",
-    imageUrl: "https://picsum.photos/seed/phasecore/400/400",
+    description: "Overclocked phase core humming with unstable violet energy.",
+    imageUrl: generatedImage(
+      "glowing phase core crystal game item icon, purple energy pulsing inside, black background, sci-fi digital art, centered",
+      202,
+    ),
     price: "5.00",
     currency: "USDT",
     stock: null,
@@ -25,8 +36,11 @@ const MOCK_ITEMS: RemoteItem[] = [
   {
     externalId: "neon_blade_03",
     name: "Neon Blade",
-    description: "Cyan-edge neon blade.",
-    imageUrl: "https://picsum.photos/seed/neonblade/400/400",
+    description: "Cyan-edge mono-filament blade that cuts through shielding.",
+    imageUrl: generatedImage(
+      "neon cyan katana blade game item icon, electric energy, cyberpunk style, black background, detailed, centered",
+      303,
+    ),
     price: "3.00",
     currency: "USDT",
     stock: null,
@@ -35,12 +49,41 @@ const MOCK_ITEMS: RemoteItem[] = [
   {
     externalId: "obsidian_hull_04",
     name: "Obsidian Hull",
-    description: "Matte obsidian hull plating.",
-    imageUrl: "https://picsum.photos/seed/obsidianhull/400/400",
+    description: "Matte obsidian hull plating with crimson micro-channel cooling.",
+    imageUrl: generatedImage(
+      "obsidian armor plating game item icon, matte black with red glowing accents, black background, sci-fi digital art, centered",
+      404,
+    ),
     price: "12.00",
     currency: "USDT",
     stock: null,
     metadata: { rarity: "LEGENDARY", category: "armor" },
+  },
+  {
+    externalId: "plasma_rifle_05",
+    name: "Plasma Rifle",
+    description: "Compact rifle that vents superheated plasma with each shot.",
+    imageUrl: generatedImage(
+      "plasma rifle game item icon, blue energy glow, futuristic weapon, black background, detailed sci-fi digital art, centered",
+      505,
+    ),
+    price: "8.00",
+    currency: "USDT",
+    stock: null,
+    metadata: { rarity: "EPIC", category: "weapon" },
+  },
+  {
+    externalId: "quantum_visor_06",
+    name: "Quantum Visor",
+    description: "HUD visor that highlights weak points across multiple spectrums.",
+    imageUrl: generatedImage(
+      "quantum visor helmet game item icon, holographic blue lens, futuristic sci-fi digital art, black background, centered",
+      606,
+    ),
+    price: "4.50",
+    currency: "USDT",
+    stock: null,
+    metadata: { rarity: "RARE", category: "gear" },
   },
 ];
 

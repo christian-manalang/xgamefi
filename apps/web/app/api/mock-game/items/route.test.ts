@@ -9,7 +9,7 @@ describe("/api/mock-game/items", () => {
   it("GET returns the default mock items", async () => {
     const res = await GET();
     const json = await res.json();
-    expect(json).toHaveLength(4);
+    expect(json).toHaveLength(6);
     expect(json[0]).toMatchObject({ externalId: "sword_skin_01", name: "Sword Skin" });
   });
 
@@ -33,7 +33,7 @@ describe("/api/mock-game/items", () => {
 
     const getRes = await GET();
     const items = await getRes.json();
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(7);
     expect(items.find((i: unknown) => (i as { externalId: string }).externalId === "axe-001")).toMatchObject(body);
   });
 
@@ -51,7 +51,7 @@ describe("/api/mock-game/items", () => {
 
     const getRes = await GET();
     const items = await getRes.json();
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(8);
   });
 
   it("POST upserts existing items by externalId", async () => {
@@ -64,7 +64,7 @@ describe("/api/mock-game/items", () => {
 
     const getRes = await GET();
     const items = await getRes.json();
-    expect(items).toHaveLength(4);
+    expect(items).toHaveLength(6);
     const updated = items.find((i: unknown) => (i as { externalId: string }).externalId === "sword_skin_01");
     expect(updated).toMatchObject({ name: "100 Gems", price: "9.99", currency: "USDT" });
   });
