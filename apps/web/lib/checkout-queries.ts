@@ -4,6 +4,7 @@ import { feeAmount, netAmount, toStellarAmount } from "@xgamefi/shared/money";
 import { buildPaymentXdr, type Asset } from "@xgamefi/shared/stellar";
 import { applyPromotion } from "@xgamefi/shared/promotions";
 import { toOrderDto, type OrderDto } from "@xgamefi/shared/dto";
+import { HttpError } from "./http";
 
 export type QuoteInput = {
   playerId: string;
@@ -29,10 +30,13 @@ export async function createOrderQuote(input: QuoteInput): Promise<QuoteResult> 
 
   return prisma.$transaction(async (tx) => {
     const item = await tx.item.findUnique({ where: { id: input.itemId } });
-    if (!item) throw new Error("item not found");
+    if (!item) throw new HttpError(404, "ITEM_NOT_FOUND");
 
     const studio = await tx.studio.findUnique({ where: { id: item.studioId } });
-    if (!studio) throw new Error("studio not found");
+    if (!studio) throw new HttpError(404, "STUDIO_NOT_FOUND");
+    if (studio.status !== "ACTIVE") throw new HttpError(400, "STUDIO_INACTIVE");
+    if (!item.isActive || !item.isListed) throw new HttpError(400, "ITEM_UNAVAILABLE");
+    if (item.stock != null && quantity > item.stock) throw new HttpError(400, "INSUFFICIENT_STOCK");
 
     const currency = input.currency ?? item.priceCurrency;
     const unitPrice = item.priceAmount;

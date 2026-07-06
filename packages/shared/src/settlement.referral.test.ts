@@ -56,6 +56,7 @@ async function reset() {
   await prisma.order.deleteMany();
   await prisma.promotion.deleteMany();
   await prisma.item.deleteMany();
+  await prisma.shop.deleteMany();
   await prisma.studio.deleteMany();
   await prisma.player.deleteMany();
 }

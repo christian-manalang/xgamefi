@@ -77,6 +77,9 @@ services:
       SHADOW_DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi_shadow
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
+      # The seed creates the demo studio's webhook URL; it must point to the
+      # web service name so the worker can deliver webhooks cross-container.
+      APP_BASE_URL: http://web:3000
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -119,6 +122,9 @@ services:
       DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi
       SHADOW_DATABASE_URL: postgresql://user:pass@postgres:5432/xgamefi_shadow
       REDIS_URL: redis://redis:6379
+      # Webhook deliveries originate from the worker container, so the demo
+      # studio's APP_BASE_URL-based webhook URL must resolve to the web service.
+      APP_BASE_URL: http://web:3000
     depends_on:
       migrate:
         condition: service_completed_successfully

@@ -56,6 +56,7 @@ const item: ItemDto = {
   category: "skins",
   metadata: { dmg: 10 },
   isActive: true,
+  isListed: true,
   syncedAt: null,
 };
 

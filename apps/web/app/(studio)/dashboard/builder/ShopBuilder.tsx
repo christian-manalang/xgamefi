@@ -27,6 +27,28 @@ export function ShopBuilder({ shop, items }: { shop: ShopDto; items: ItemDto[] }
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  async function refreshItems() {
+    const res = await fetch(`/api/v1/studios/${shop.studioId}/items`);
+    if (res.ok) {
+      const json = await res.json();
+      const refreshed = (json.items as ItemDto[]) ?? [];
+      setItemMap(Object.fromEntries(refreshed.map((i) => [i.id, i])));
+    }
+  }
+
+  async function syncStock() {
+    setBusy(true); setStatus(null);
+    try {
+      const res = await fetch(`/api/v1/studios/${shop.studioId}/items/stock-sync`, { method: "POST" });
+      if (res.ok) {
+        setStatus("SYNC_QUEUED");
+        setTimeout(() => refreshItems(), 1200);
+      } else {
+        setStatus("SYNC_FAILED");
+      }
+    } catch { setStatus("SYNC_FAILED"); } finally { setBusy(false); }
+  }
+
   const allItems = Object.values(itemMap);
   const placedIds = state.layout.sections.flatMap((s) => s.itemIds);
   const selected = state.selectedItemId ? itemMap[state.selectedItemId] ?? null : null;
@@ -69,6 +91,8 @@ export function ShopBuilder({ shop, items }: { shop: ShopDto; items: ItemDto[] }
           <span className="font-mono text-[12px] uppercase tracking-[0.1em] text-outline">SHOP_BUILDER · /s/{shop.slug}</span>
           <div className="flex items-center gap-3">
             {status && <span data-testid="builder-status" className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary-fixed">{status}</span>}
+            <button type="button" data-testid="builder-sync-stock" disabled={busy} onClick={syncStock}
+              className="border-2 border-outline px-4 py-2 font-mono text-[12px] uppercase tracking-[0.1em] hover:border-primary-fixed hover:text-primary-fixed disabled:opacity-50">SYNC_STOCK</button>
             <button type="button" data-testid="builder-save-draft" disabled={busy} onClick={saveDraft}
               className="border-2 border-outline px-4 py-2 font-mono text-[12px] uppercase tracking-[0.1em] hover:border-primary-fixed hover:text-primary-fixed disabled:opacity-50">SAVE_DRAFT</button>
             <button type="button" data-testid="builder-publish" disabled={busy} onClick={publish}

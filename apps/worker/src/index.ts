@@ -1,6 +1,7 @@
 import type { Job, Processor, Worker } from "bullmq";
 import { QUEUE_NAMES, registerWorker, getQueue, type QueueName } from "@xgamefi/shared/queues";
 import { catalogueSyncProcessor } from "./jobs/catalogue-sync";
+import { stockSyncProcessor } from "./jobs/stock-sync";
 import { stellarWatcherProcessor } from "./jobs/stellar-watcher";
 import { payoutProcessor } from "./jobs/payout";
 import { webhookDeliveryProcessor } from "./jobs/webhook-delivery";
@@ -14,6 +15,7 @@ export const stubProcessor: Processor = async (_job: Job) => {
 
 const processors: Partial<Record<QueueName, Processor>> = {
   "catalogue-sync": catalogueSyncProcessor,
+  "stock-sync": stockSyncProcessor,
   "stellar-watcher": stellarWatcherProcessor,
   payout: payoutProcessor,
   "webhook-delivery": webhookDeliveryProcessor,

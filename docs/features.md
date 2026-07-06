@@ -2,6 +2,17 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Self-onboarding, builder CRUD, and stock sync
+
+Added the missing pieces needed for a studio to set up and run a real shop without admin intervention.
+
+- **Public studio self-onboarding:** `apps/web/app/(auth)/register/*` + `POST /api/v1/auth/register` — a new user can create a studio, owner account, and default shop in one form. New studios are created as `ACTIVE`, logged in immediately, and audited (`studio.self_onboard`, `auth.login.success`).
+- **`Item.isListed` availability toggle:** `packages/db/prisma/schema.prisma` — added `isListed Boolean @default(true)`. The builder can now hide/show items per shop, and the public storefront/checkout enforce the flag.
+- **Expanded builder item CRUD:** `apps/web/app/(studio)/dashboard/builder/components/ItemConfigPanel.tsx` now edits name, description, image URL, category, rarity, price, currency, unlimited/finite stock, sale window, and the `isListed` toggle. `ItemLibrary` and `LayoutCanvas` surface stock and synced-at info and hidden-state badges.
+- **Stock-only sync:** `POST /api/v1/studios/:id/items/stock-sync` enqueues a new `stock-sync` BullMQ job (`apps/worker/src/jobs/stock-sync.ts`) that refreshes only `stock` and `syncedAt` from the studio's game API. A **SYNC_STOCK** button in the builder triggers it and refreshes item state.
+- **Checkout enforcement:** `apps/web/lib/checkout-queries.ts` now rejects quotes for inactive/unlisted items, inactive studios, or quantities exceeding synced stock. `POST /api/v1/studios/:id/shop/publish` also blocks non-`ACTIVE` studios.
+- **Tests:** added `apps/web/app/api/v1/auth/register/route.test.ts`, expanded `apps/web/app/api/v1/studios/[id]/items/[itemId]/route.test.ts`, added `apps/web/lib/catalogue-queries.test.ts`, updated `apps/web/lib/checkout-queries.test.ts`, and updated audit-coverage expectations.
+
 ## MVP dashboard & storefront gap fill (#129–#134)
 
 Filled the remaining SPEC §6 MVP pages for studios and players.

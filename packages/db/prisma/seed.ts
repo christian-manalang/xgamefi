@@ -93,18 +93,21 @@ async function main() {
   const webhookSecret = `whsec_${randomBytes(24).toString("hex")}`;
   const webhookSecretHash = await argon2.hash(webhookSecret, { type: argon2.argon2id });
 
+  const baseUrl = env.APP_BASE_URL.replace(/\/$/, "");
+  const mockGameUrl = `${baseUrl}/api/mock-game`;
+
   const studio = await prisma.studio.upsert({
     where: { slug: "gridlock" },
     update: {
       name: "Gridlock Games",
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
-      webhookUrl: "http://web:3000/api/mock-game/webhook",
+      webhookUrl: `${mockGameUrl}/webhook`,
       webhookSecretHash,
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
       integrationMode: "API_PULL",
-      apiBaseUrl: "http://web:3000/api/mock-game",
+      apiBaseUrl: mockGameUrl,
     },
     create: {
       name: "Gridlock Games",
@@ -112,12 +115,12 @@ async function main() {
       description: "Anchor partner — Neon Overdrive gear.",
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
-      webhookUrl: "http://web:3000/api/mock-game/webhook",
+      webhookUrl: `${mockGameUrl}/webhook`,
       webhookSecretHash,
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
       integrationMode: "API_PULL",
-      apiBaseUrl: "http://web:3000/api/mock-game",
+      apiBaseUrl: mockGameUrl,
     },
   });
 

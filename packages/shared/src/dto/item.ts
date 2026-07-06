@@ -17,6 +17,7 @@ export type ItemRow = {
   category: string | null;
   metadata: Prisma.JsonValue | null;
   isActive: boolean;
+  isListed: boolean;
   syncedAt: Date | null;
 };
 
@@ -33,6 +34,7 @@ export type ItemDto = {
   category: string | null;
   metadata: Record<string, unknown>;
   isActive: boolean;
+  isListed: boolean;
   syncedAt: string | null;
 };
 
@@ -50,6 +52,7 @@ export function toItemDto(row: ItemRow): ItemDto {
     category: row.category,
     metadata: (row.metadata ?? {}) as Record<string, unknown>,
     isActive: row.isActive,
+    isListed: row.isListed,
     syncedAt: row.syncedAt ? row.syncedAt.toISOString() : null,
   };
 }
