@@ -10,7 +10,7 @@ export const envSchema = z.object({
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters"),
 
   DATABASE_URL: z.string().url(),
-  SHADOW_DATABASE_URL: z.string().url(),
+  SHADOW_DATABASE_URL: z.string().url().optional(),
   REDIS_URL: z.string().url(),
 
   S3_ENDPOINT: z.string().url(),

@@ -49,4 +49,9 @@ describe("parseEnv", () => {
   it("throws on an invalid STELLAR_NETWORK enum value", () => {
     expect(() => parseEnv({ ...valid, STELLAR_NETWORK: "mainnet" })).toThrow(/STELLAR_NETWORK/);
   });
+
+  it("allows SHADOW_DATABASE_URL to be omitted", () => {
+    const { SHADOW_DATABASE_URL, ...withoutShadow } = valid;
+    expect(() => parseEnv(withoutShadow)).not.toThrow();
+  });
 });
