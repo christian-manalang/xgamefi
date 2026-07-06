@@ -21,6 +21,16 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Required while the web service runs `next dev` in staging. Without this,
+  // the dev server blocks cross-origin requests from the custom domains.
+  allowedDevOrigins: [
+    "xgamefi.shop",
+    "app.xgamefi.shop",
+    "xgamefi-staging.up.railway.app",
+    "app-staging.up.railway.app",
+    "xgamefi-app-staging.up.railway.app",
+    "xgamefi-app.up.railway.app",
+  ],
   // Workspace packages ship TypeScript source (incl. the Prisma 7 generated
   // client, which uses `.js` specifiers that resolve to `.ts`); transpiling
   // them lets Next's bundler apply the .js→.ts extension alias.
