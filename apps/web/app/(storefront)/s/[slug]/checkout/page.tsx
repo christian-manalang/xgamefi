@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { getPublishedShop, getPublicItem } from "../../../../../lib/catalogue-queries";
+import { getPublishedShop, getPublicItem, getStudioBrand } from "../../../../../lib/catalogue-queries";
+import { brandToStyle } from "../brand";
 import { CheckoutClient } from "./checkout-client";
 
 export default async function CheckoutPage({
@@ -11,14 +12,15 @@ export default async function CheckoutPage({
 }) {
   const { slug } = await params;
   const { item: itemId, ref, currency } = await searchParams;
-  const [shop, item] = await Promise.all([
+  const [shop, item, brand] = await Promise.all([
     getPublishedShop(slug),
     itemId ? getPublicItem(itemId) : Promise.resolve(null),
+    getStudioBrand(slug),
   ]);
   if (!shop || !item) notFound();
 
   return (
-    <main className="min-h-screen bg-background text-on-background">
+    <main style={brandToStyle(brand)} className="min-h-screen bg-background text-on-background">
       <CheckoutClient shop={shop} item={item} referralCode={ref ?? null} currency={currency ?? null} />
     </main>
   );

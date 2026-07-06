@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPublishedShop } from "@/lib/catalogue-queries";
+import { getPublishedShop, getStudioBrand } from "@/lib/catalogue-queries";
+import { brandToStyle } from "../brand";
 import { ListingCard } from "./_components/listing-card";
 
 export default async function MarketPage({
@@ -10,7 +12,7 @@ export default async function MarketPage({
   searchParams: Promise<{ page?: string }>;
 }) {
   const { slug } = await params;
-  const shop = await getPublishedShop(slug);
+  const [shop, brand] = await Promise.all([getPublishedShop(slug), getStudioBrand(slug)]);
   if (!shop) notFound();
 
   const page = Number((await searchParams).page ?? "1");
@@ -19,13 +21,23 @@ export default async function MarketPage({
   const listings: { id: string; itemId: string; price: { amount: string; currency: string } }[] = data.listings ?? [];
 
   return (
-    <main className="min-h-screen bg-background text-on-background max-w-[1440px] mx-auto px-5 md:px-16 py-10">
-      <h1 className="font-display text-[48px] font-semibold text-on-surface mb-8">Market</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {listings.map((l) => (
-          <ListingCard key={l.id} listing={l} slug={slug} />
-        ))}
-      </div>
+    <main style={brandToStyle(brand)} className="min-h-screen bg-background text-on-background">
+      <section className="max-w-[1440px] mx-auto px-5 md:px-16 py-10">
+        <div className="mb-6">
+          <Link
+            href={`/s/${slug}`}
+            className="inline-flex items-center gap-2 font-mono uppercase tracking-[0.1em] text-[12px] px-4 py-2 border-2 border-outline-variant text-on-surface-variant hover:border-primary-fixed hover:text-primary-fixed transition-colors"
+          >
+            ← Back to Shop
+          </Link>
+        </div>
+        <h1 className="font-display text-[48px] font-semibold text-on-surface mb-8">Market</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {listings.map((l) => (
+            <ListingCard key={l.id} listing={l} slug={slug} />
+          ))}
+        </div>
+      </section>
     </main>
   );
 }

@@ -23,6 +23,9 @@ export const envSchema = z.object({
   ADMIN_USERNAME: z.string().min(1),
   ADMIN_PASSWORD: z.string().min(1),
 
+  STUDIO_OWNER_USERNAME: z.string().min(1).default("studio"),
+  STUDIO_OWNER_PASSWORD: z.string().min(1).default("change-me-studio"),
+
   STELLAR_NETWORK: z.enum(["testnet", "pubnet"]),
   STELLAR_HORIZON_URL: z.string().url(),
   STELLAR_RPC_URL: z.string().url(),

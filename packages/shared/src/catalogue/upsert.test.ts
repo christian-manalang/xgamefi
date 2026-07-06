@@ -49,4 +49,23 @@ describe("upsertCatalogueItems", () => {
       data: { isActive: false },
     });
   });
+
+  it("maps metadata.category and metadata.rarity to DB columns", async () => {
+    await upsertCatalogueItems("stu1", [
+      {
+        externalId: "rifle",
+        name: "Plasma Rifle",
+        price: "2.50",
+        currency: "USDT",
+        metadata: { category: "weapon", rarity: "EPIC" },
+      },
+    ]);
+
+    expect(mocks.upsert).toHaveBeenCalledTimes(1);
+    const call = mocks.upsert.mock.calls[0]![0] as { create: { category: unknown; rarity: unknown }; update: { category: unknown; rarity: unknown } };
+    expect(call.create.category).toBe("weapon");
+    expect(call.create.rarity).toBe("EPIC");
+    expect(call.update.category).toBe("weapon");
+    expect(call.update.rarity).toBe("EPIC");
+  });
 });

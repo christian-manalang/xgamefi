@@ -4,6 +4,7 @@ import { env } from "@xgamefi/config/env";
 
 export type QueueName =
   | "catalogue-sync"
+  | "stock-sync"
   | "stellar-watcher"
   | "webhook-delivery"
   | "payout"
@@ -13,6 +14,7 @@ export type QueueName =
 
 export const QUEUE_NAMES: QueueName[] = [
   "catalogue-sync",
+  "stock-sync",
   "stellar-watcher",
   "webhook-delivery",
   "payout",

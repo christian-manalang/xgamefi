@@ -12,23 +12,35 @@ export function ItemConfigPanel({
   item: ItemDto | null;
   onSaved: (updated: ItemDto) => void;
 }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [category, setCategory] = useState("");
+  const [rarity, setRarity] = useState("");
   const [price, setPrice] = useState("");
   const [currency, setCurrency] = useState<"XLM" | "USDT">("USDT");
   const [stock, setStock] = useState<string>("");
   const [unlimited, setUnlimited] = useState(true);
   const [saleStartsAt, setSaleStartsAt] = useState("");
   const [saleEndsAt, setSaleEndsAt] = useState("");
+  const [isListed, setIsListed] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!item) return;
+    setName(item.name);
+    setDescription(item.description ?? "");
+    setImageUrl(item.imageUrl ?? "");
+    setCategory(item.category ?? "");
+    setRarity(item.rarity ?? "");
     setPrice(item.price.amount);
     setCurrency(item.price.currency as "XLM" | "USDT");
     setUnlimited(item.stock === null);
     setStock(item.stock === null ? "" : String(item.stock));
     setSaleStartsAt((item.metadata?.saleWindow as { startsAt?: string } | undefined)?.startsAt ?? "");
     setSaleEndsAt((item.metadata?.saleWindow as { endsAt?: string } | undefined)?.endsAt ?? "");
+    setIsListed(item.isListed);
   }, [item]);
 
   if (!item) {
@@ -43,16 +55,23 @@ export function ItemConfigPanel({
     setSaving(true);
     setError(null);
     try {
+      const body: Record<string, unknown> = {
+        name,
+        description: description || null,
+        imageUrl: imageUrl || null,
+        category: category || null,
+        rarity: rarity || null,
+        priceAmount: price,
+        priceCurrency: currency,
+        stock: unlimited ? null : Number(stock),
+        saleStartsAt: saleStartsAt || null,
+        saleEndsAt: saleEndsAt || null,
+        isListed,
+      };
       const res = await fetch(`/api/v1/studios/${studioId}/items/${item!.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          priceAmount: price,
-          priceCurrency: currency,
-          stock: unlimited ? null : Number(stock),
-          saleStartsAt: saleStartsAt || null,
-          saleEndsAt: saleEndsAt || null,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("save failed");
       const json = await res.json();
@@ -68,36 +87,88 @@ export function ItemConfigPanel({
   const input = "w-full border-b-2 border-outline-variant bg-transparent py-1 font-mono text-on-surface focus:border-primary-fixed focus:outline-none";
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col gap-3 border-r-2 border-outline-variant bg-surface-container-lowest p-3">
+    <aside className="flex w-64 shrink-0 flex-col gap-3 border-r-2 border-outline-variant bg-surface-container-lowest p-3 overflow-y-auto">
       <h2 className="font-mono text-[12px] uppercase tracking-[0.1em] text-outline">ITEM_CONFIG</h2>
-      <p className="font-display text-on-surface">{item.name}</p>
 
-      <label className={label}>PRICE
+      {item.imageUrl ? (
+        <img src={item.imageUrl} alt="" className="aspect-square w-full object-cover border-2 border-outline-variant" />
+      ) : (
+        <div className="flex aspect-square w-full items-center justify-center bg-surface-container-high font-mono text-[10px] uppercase text-on-surface-variant border-2 border-outline-variant">NO IMAGE</div>
+      )}
+
+      <label className={label}>
+        NAME
+        <input data-testid="config-name" className={input} value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+
+      <label className={label}>
+        DESCRIPTION
+        <input data-testid="config-description" className={input} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </label>
+
+      <label className={label}>
+        IMAGE URL
+        <input data-testid="config-image-url" type="url" className={input} value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+      </label>
+
+      <label className={label}>
+        CATEGORY
+        <input data-testid="config-category" className={input} value={category} onChange={(e) => setCategory(e.target.value)} />
+      </label>
+
+      <label className={label}>
+        RARITY
+        <input data-testid="config-rarity" className={input} value={rarity} onChange={(e) => setRarity(e.target.value)} />
+      </label>
+
+      <label className={label}>
+        PRICE
         <input data-testid="config-price" className={input} value={price} onChange={(e) => setPrice(e.target.value)} />
       </label>
-      <label className={label}>CURRENCY
+
+      <label className={label}>
+        CURRENCY
         <select data-testid="config-currency" className={input} value={currency} onChange={(e) => setCurrency(e.target.value as "XLM" | "USDT")}>
           <option value="USDT">USDT</option>
           <option value="XLM">XLM</option>
         </select>
       </label>
+
       <label className={`${label} flex items-center gap-2`}>
         <input data-testid="config-unlimited" type="checkbox" checked={unlimited} onChange={(e) => setUnlimited(e.target.checked)} />
         UNLIMITED_STOCK
       </label>
+
       {!unlimited && (
-        <label className={label}>STOCK
+        <label className={label}>
+          STOCK
           <input data-testid="config-stock" type="number" className={input} value={stock} onChange={(e) => setStock(e.target.value)} />
         </label>
       )}
-      <label className={label}>SALE_STARTS
+
+      <label className={label}>
+        SALE_STARTS
         <input data-testid="config-sale-start" type="datetime-local" className={input} value={saleStartsAt} onChange={(e) => setSaleStartsAt(e.target.value)} />
       </label>
-      <label className={label}>SALE_ENDS
+
+      <label className={label}>
+        SALE_ENDS
         <input data-testid="config-sale-end" type="datetime-local" className={input} value={saleEndsAt} onChange={(e) => setSaleEndsAt(e.target.value)} />
       </label>
 
+      <label className={`${label} flex items-center gap-2`}>
+        <input data-testid="config-listed" type="checkbox" checked={isListed} onChange={(e) => setIsListed(e.target.checked)} />
+        LISTED_IN_SHOP
+      </label>
+
+      {item.syncedAt && (
+        <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-outline">
+          SYNCED {new Date(item.syncedAt).toLocaleString()}
+        </p>
+      )}
+
       {error && <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-error">{error}</p>}
+
       <button
         type="button"
         data-testid="config-save"

@@ -61,6 +61,7 @@ const item: ItemDto = {
   category: "skins",
   metadata: {},
   isActive: true,
+  isListed: true,
   syncedAt: null,
 };
 
@@ -82,7 +83,7 @@ describe("/s/[slug]", () => {
 
     expect(screen.getByText("Gridlock Games")).toBeInTheDocument();
     expect(screen.getByText("Sword Skin")).toBeInTheDocument();
-    expect(screen.getByText(/1\.0000000/)).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.textContent === "1 USDT")).toBeInTheDocument();
     expect(screen.getByText(/1 ITEM · PAGE 1 OF 1/)).toBeInTheDocument();
   });
 

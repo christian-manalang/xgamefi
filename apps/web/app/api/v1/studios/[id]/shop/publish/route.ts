@@ -1,7 +1,7 @@
 import { prisma } from "@xgamefi/db";
 import { ShopLayoutSchema } from "@xgamefi/shared";
 import { toShopDto } from "@xgamefi/shared/dto";
-import { requireStudio, scopeToStudio } from "../../../../../../../lib/auth/guards";
+import { requireStudio, scopeToStudio } from "@/lib/auth/guards";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
   const { id: studioId } = await ctx.params;
@@ -15,9 +15,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return Response.json({ error: "forbidden" }, { status });
   }
 
+  const studio = await prisma.studio.findUnique({ where: { id: studioId }, select: { status: true } });
+  if (studio?.status !== "ACTIVE") {
+    return Response.json({ error: { code: "STUDIO_INACTIVE" } }, { status: 400 });
+  }
+
   const current = await prisma.shop.findUnique({ where: { studioId }, select: { draftLayout: true } });
+  console.log(`[shop/publish POST] studioId=${studioId} draftLayout=`, JSON.stringify(current?.draftLayout));
   const parsed = ShopLayoutSchema.safeParse(current?.draftLayout ?? null);
   if (!parsed.success) {
+    console.error("[shop/publish POST] draftLayout invalid:", JSON.stringify(parsed.error.flatten()));
     return Response.json({ error: "no valid draft to publish" }, { status: 409 });
   }
 

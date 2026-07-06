@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { prisma, Prisma } from "@xgamefi/db";
 import { env } from "@xgamefi/config/env";
 import { randomUUID } from "node:crypto";
+import { HttpError } from "./http";
 
 vi.mock("@xgamefi/shared/stellar", () => ({
   buildPaymentXdr: vi.fn(async () => "xdr"),
@@ -28,12 +29,16 @@ beforeEach(async () => {
     data: { id: STUDIO, name: "G", slug: `g-${STUDIO.slice(0, 8)}`, payoutWalletAddress: "GDEST", webhookSecretHash: "h", platformFeeBps: 500, status: "ACTIVE" },
   });
   await prisma.item.create({
-    data: { id: ITEM, studioId: STUDIO, externalId: "sword", name: "Sword", priceAmount: new Prisma.Decimal("1"), priceCurrency: "USDT", isActive: true },
+    data: { id: ITEM, studioId: STUDIO, externalId: "sword", name: "Sword", priceAmount: new Prisma.Decimal("1"), priceCurrency: "USDT", isActive: true, isListed: true },
   });
   await prisma.player.create({ data: { id: PLAYER, walletAddress: `G${PLAYER.replace(/-/g, "").slice(0, 20)}` } });
 });
 
-afterAll(wipe);
+afterEach(wipe);
+
+async function expectHttpError(promise: Promise<unknown>, status: number, code: string) {
+  await expect(promise).rejects.toSatisfy((err: HttpError) => err.status === status && err.message === code);
+}
 
 describe("createOrderQuote", () => {
   it("creates a pending order with the Stellar memo bound to the order id", async () => {
@@ -44,5 +49,31 @@ describe("createOrderQuote", () => {
     const persisted = await prisma.order.findUnique({ where: { id: res.order.id } });
     expect(persisted?.paymentStatus).toBe("PENDING");
     expect(persisted?.playerId).toBe(PLAYER);
+  });
+
+  it("rejects an inactive studio", async () => {
+    await prisma.studio.update({ where: { id: STUDIO }, data: { status: "PENDING" } });
+    await expectHttpError(createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1 }), 400, "STUDIO_INACTIVE");
+  });
+
+  it("rejects an unlisted item", async () => {
+    await prisma.item.update({ where: { id: ITEM }, data: { isListed: false } });
+    await expectHttpError(createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1 }), 400, "ITEM_UNAVAILABLE");
+  });
+
+  it("rejects an inactive item", async () => {
+    await prisma.item.update({ where: { id: ITEM }, data: { isActive: false } });
+    await expectHttpError(createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1 }), 400, "ITEM_UNAVAILABLE");
+  });
+
+  it("rejects a purchase that exceeds synced stock", async () => {
+    await prisma.item.update({ where: { id: ITEM }, data: { stock: 3 } });
+    await expectHttpError(createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 5 }), 400, "INSUFFICIENT_STOCK");
+  });
+
+  it("allows a purchase within synced stock", async () => {
+    await prisma.item.update({ where: { id: ITEM }, data: { stock: 5 } });
+    const res = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 5 });
+    expect(res.order.quantity).toBe(5);
   });
 });

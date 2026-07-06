@@ -17,6 +17,8 @@ export async function upsertCatalogueItems(
         priceAmount: new Prisma.Decimal(item.price),
         priceCurrency: item.currency,
         stock: item.stock ?? null,
+        category: (item.metadata?.category as string) ?? null,
+        rarity: (item.metadata?.rarity as string) ?? null,
         metadata: (item.metadata ?? {}) as Prisma.InputJsonValue,
         isActive: true,
         syncedAt,

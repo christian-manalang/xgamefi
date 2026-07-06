@@ -12,6 +12,10 @@ export default async function LoginPage() {
         <h1 className="font-display text-2xl font-semibold italic text-on-surface mb-1">xGameFi</h1>
         <p className="font-mono text-xs uppercase tracking-[0.1em] text-primary-fixed mb-8">Operator access</p>
         <LoginForm />
+        <p className="mt-6 text-center font-mono text-xs uppercase tracking-[0.1em] text-on-surface-variant">
+          Need a studio?{" "}
+          <a href="/register" className="text-primary-fixed hover:underline">Create one</a>
+        </p>
       </section>
     </main>
   );

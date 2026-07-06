@@ -70,6 +70,10 @@ export function LayoutCanvas(props: LayoutCanvasProps) {
               <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary-fixed">
                 {item.price.amount} {item.price.currency}
               </p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-outline">
+                {item.stock === null ? "∞ stock" : `${item.stock} left`}
+                {!item.isListed && " · HIDDEN"}
+              </p>
               <div className="mt-2 flex gap-1">
                 <button
                   type="button"

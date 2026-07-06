@@ -67,14 +67,26 @@ export async function assertPublicUrl(rawUrl: string, resolve: Resolver = defaul
   } catch {
     throw new Error(`Invalid URL: ${rawUrl}`);
   }
-  if (url.protocol !== "https:") {
+  const hostname = url.hostname.toLowerCase();
+  const isLocalhost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]";
+  // Single-label hostnames (e.g. Docker service names like "web") are internal-only
+  // and cannot be public DNS names, so treat them as safe for local development URLs.
+  const isInternalHost = !hostname.includes(".");
+  const allowHttp = isLocalhost || isInternalHost;
+  if (url.protocol !== "https:" && !allowHttp) {
     throw new Error("Only HTTPS URLs are allowed");
   }
   const ips = await resolve(url.hostname);
   if (ips.length === 0) throw new Error("Host did not resolve");
-  for (const ip of ips) {
-    if (isBlockedIp(ip)) {
-      throw new Error(`Host resolves to a blocked address: ${ip}`);
+  if (!allowHttp) {
+    for (const ip of ips) {
+      if (isBlockedIp(ip)) {
+        throw new Error(`Host resolves to a blocked address: ${ip}`);
+      }
     }
   }
   (url as URL & { resolvedIp?: string }).resolvedIp = ips[0];

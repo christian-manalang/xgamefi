@@ -5,8 +5,8 @@ import { getQueue } from "./queues";
 import { publishOrderEvent } from "./order-events";
 
 export type VerifyAdvanceResult =
-  | { status: "PAID" }
-  | { status: "ALREADY" }
+  | { status: "PAID"; orderId: string; referralId?: string }
+  | { status: "ALREADY"; orderId: string }
   | { status: "REJECTED"; reason: string };
 
 export async function verifyAndAdvanceOrder(args: {
@@ -21,7 +21,7 @@ export async function verifyAndAdvanceOrder(args: {
     if (!order) throw new Error(`verifyAndAdvanceOrder: order ${args.orderId} not found`);
 
     if (order.paymentStatus === "PAID") {
-      return { status: "ALREADY" } as VerifyAdvanceResult;
+      return { status: "ALREADY", orderId: order.id } as VerifyAdvanceResult;
     }
 
     const expectedAsset: Asset =
@@ -70,15 +70,9 @@ export async function verifyAndAdvanceOrder(args: {
       },
     });
 
-    await getQueue("payout").add("payout", { orderId: order.id }, { jobId: `payout-${order.id}` });
-    await getQueue("webhook-delivery").add(
-      "webhook-delivery",
-      { orderId: order.id },
-      { jobId: `webhook-${order.id}` },
-    );
-
     // Referral qualification — only on the invitee's FIRST qualifying (PAID) purchase.
     // This branch runs only on the first PAID transition, so it is inherently once-per-order.
+    let referralId: string | undefined;
     const priorPaid = await tx.order.count({
       where: { playerId: order.playerId, paymentStatus: "PAID", id: { not: order.id } },
     });
@@ -97,19 +91,28 @@ export async function verifyAndAdvanceOrder(args: {
           },
         });
         if (flipped.count === 1) {
-          await getQueue("referral-reward").add(
-            "referral-reward",
-            { referralId: pendingReferral.id },
-            { jobId: `referral-reward-${pendingReferral.id}` },
-          );
+          referralId = pendingReferral.id;
         }
       }
     }
 
-    return { status: "PAID" } as VerifyAdvanceResult;
+    return { status: "PAID", orderId: order.id, referralId } as VerifyAdvanceResult;
   });
 
   if (result.status === "PAID") {
+    await getQueue("payout").add("payout", { orderId: result.orderId }, { jobId: `payout-${result.orderId}` });
+    await getQueue("webhook-delivery").add(
+      "webhook-delivery",
+      { orderId: result.orderId },
+      { jobId: `webhook-${result.orderId}` },
+    );
+    if (result.referralId) {
+      await getQueue("referral-reward").add(
+        "referral-reward",
+        { referralId: result.referralId },
+        { jobId: `referral-reward-${result.referralId}` },
+      );
+    }
     await publishOrderEvent(args.orderId, { paymentStatus: "PAID" }).catch((err) =>
       console.error(`verifyAndAdvanceOrder: failed to publish event for ${args.orderId}`, err),
     );

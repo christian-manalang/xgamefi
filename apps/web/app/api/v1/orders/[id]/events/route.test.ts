@@ -32,6 +32,8 @@ describe("GET /orders/:id/events", () => {
     const res = await GET(new Request("https://x"), ctx);
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/event-stream");
+    expect(res.headers.get("content-encoding")).toBe("identity");
+    expect(res.headers.get("x-accel-buffering")).toBe("no");
   });
 
   it("returns 403 if the principal does not own the order", async () => {

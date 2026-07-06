@@ -6,7 +6,7 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await ctx.params;
-  const row = await prisma.item.findFirst({ where: { id, isActive: true } });
+  const row = await prisma.item.findFirst({ where: { id, isActive: true, isListed: true } });
   if (!row) return Response.json({ error: "not found" }, { status: 404 });
   return Response.json({ item: toItemDto(row) }, { status: 200 });
 }

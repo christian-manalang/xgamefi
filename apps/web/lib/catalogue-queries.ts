@@ -14,16 +14,25 @@ export async function getShopItems(
     return { items: [], total: 0, page: query.page, pageSize: query.pageSize };
   }
 
-  const where: Prisma.ItemWhereInput = { studioId: shop.studioId, isActive: true };
+  const where: Prisma.ItemWhereInput = { studioId: shop.studioId, isActive: true, isListed: true };
   if (query.q) where.name = { contains: query.q, mode: "insensitive" };
   if (query.category) where.category = query.category;
   if (query.rarity) where.rarity = query.rarity;
   if (query.featured) where.id = { in: shop.featuredItemIds };
 
+  const orderBy: Prisma.ItemOrderByWithRelationInput[] =
+    query.sort === "price_asc"
+      ? [{ priceAmount: "asc" }]
+      : query.sort === "price_desc"
+        ? [{ priceAmount: "desc" }]
+        : query.sort === "newest"
+          ? [{ createdAt: "desc" }]
+          : [{ createdAt: "asc" }];
+
   const [rows, total] = await Promise.all([
     prisma.item.findMany({
       where,
-      orderBy: { createdAt: "asc" },
+      orderBy,
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
     }),
@@ -42,7 +51,7 @@ export async function getPublishedShop(slug: string): Promise<ShopDto | null> {
 }
 
 export async function getPublicItem(id: string): Promise<ItemDto | null> {
-  const row = await prisma.item.findFirst({ where: { id, isActive: true } });
+  const row = await prisma.item.findFirst({ where: { id, isActive: true, isListed: true } });
   return row ? toItemDto(row) : null;
 }
 
@@ -55,12 +64,12 @@ export async function getShopFilterOptions(slug: string): Promise<{ categories: 
 
   const [categoryRows, rarityRows] = await Promise.all([
     prisma.item.findMany({
-      where: { studioId: shop.studioId, isActive: true, category: { not: null } },
+      where: { studioId: shop.studioId, isActive: true, isListed: true, category: { not: null } },
       distinct: ["category"],
       select: { category: true },
     }),
     prisma.item.findMany({
-      where: { studioId: shop.studioId, isActive: true, rarity: { not: null } },
+      where: { studioId: shop.studioId, isActive: true, isListed: true, rarity: { not: null } },
       distinct: ["rarity"],
       select: { rarity: true },
     }),

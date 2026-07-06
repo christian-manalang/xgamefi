@@ -19,7 +19,7 @@ export const ShopThemeSchema = z.object({
   primary: hexColor.optional(),
   secondary: hexColor.optional(),
   background: hexColor.optional(),
-  logoUrl: z.string().url().optional(),
+  logoUrl: z.string().url().nullish(),
 });
 export type ShopTheme = z.infer<typeof ShopThemeSchema>;
 

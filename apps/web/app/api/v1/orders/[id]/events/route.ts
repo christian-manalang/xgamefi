@@ -29,28 +29,16 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
   const channel = `order-events:${id}`;
   const redis = getRedisSubscriber();
-  const stream = createSseStream(channel, redis);
-
   const initial = JSON.stringify({ paymentStatus: order.paymentStatus, deliveryStatus: order.deliveryStatus });
-  const encoder = new TextEncoder();
-  const combined = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      controller.enqueue(encoder.encode(`data: ${initial}\n\n`));
-      const reader = stream.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        controller.enqueue(value);
-      }
-      controller.close();
-    },
-  });
+  const stream = createSseStream(channel, redis, initial);
 
-  return new Response(combined, {
+  return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
+      "Content-Encoding": "identity",
+      "X-Accel-Buffering": "no",
     },
   });
 }

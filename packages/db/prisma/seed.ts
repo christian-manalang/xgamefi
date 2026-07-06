@@ -12,10 +12,72 @@ const GRIDLOCK_BRAND = {
 // Testnet payout wallet (demo placeholder; rotate before pubnet).
 const GRIDLOCK_PAYOUT_WALLET = "GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H";
 
+function generatedImage(prompt: string, seed: number): string {
+  const encoded = encodeURIComponent(prompt);
+  return `https://image.pollinations.ai/prompt/${encoded}?width=400&height=400&seed=${seed}&nologo=true`;
+}
+
 const FILLER_ITEMS = [
-  { externalId: "phase_core_02", name: "Phase Core", rarity: "EPIC", category: "core", price: "5", description: "Overclocked phase core." },
-  { externalId: "neon_blade_03", name: "Neon Blade", rarity: "RARE", category: "blade", price: "3", description: "Cyan-edge neon blade." },
-  { externalId: "obsidian_hull_04", name: "Obsidian Hull", rarity: "LEGENDARY", category: "armor", price: "12", description: "Matte obsidian hull plating." },
+  {
+    externalId: "phase_core_02",
+    name: "Phase Core",
+    rarity: "EPIC",
+    category: "core",
+    price: "5",
+    description: "Overclocked phase core humming with unstable violet energy.",
+    imageUrl: generatedImage(
+      "glowing phase core crystal game item icon, purple energy pulsing inside, black background, sci-fi digital art, centered",
+      202,
+    ),
+  },
+  {
+    externalId: "neon_blade_03",
+    name: "Neon Blade",
+    rarity: "RARE",
+    category: "blade",
+    price: "3",
+    description: "Cyan-edge mono-filament blade that cuts through shielding.",
+    imageUrl: generatedImage(
+      "neon cyan katana blade game item icon, electric energy, cyberpunk style, black background, detailed, centered",
+      303,
+    ),
+  },
+  {
+    externalId: "obsidian_hull_04",
+    name: "Obsidian Hull",
+    rarity: "LEGENDARY",
+    category: "armor",
+    price: "12",
+    description: "Matte obsidian hull plating with crimson micro-channel cooling.",
+    imageUrl: generatedImage(
+      "obsidian armor plating game item icon, matte black with red glowing accents, black background, sci-fi digital art, centered",
+      404,
+    ),
+  },
+  {
+    externalId: "plasma_rifle_05",
+    name: "Plasma Rifle",
+    rarity: "EPIC",
+    category: "weapon",
+    price: "8",
+    description: "Compact rifle that vents superheated plasma with each shot.",
+    imageUrl: generatedImage(
+      "plasma rifle game item icon, blue energy glow, futuristic weapon, black background, detailed sci-fi digital art, centered",
+      505,
+    ),
+  },
+  {
+    externalId: "quantum_visor_06",
+    name: "Quantum Visor",
+    rarity: "RARE",
+    category: "gear",
+    price: "4.5",
+    description: "HUD visor that highlights weak points across multiple spectrums.",
+    imageUrl: generatedImage(
+      "quantum visor helmet game item icon, holographic blue lens, futuristic sci-fi digital art, black background, centered",
+      606,
+    ),
+  },
 ];
 
 async function main() {
@@ -31,16 +93,21 @@ async function main() {
   const webhookSecret = `whsec_${randomBytes(24).toString("hex")}`;
   const webhookSecretHash = await argon2.hash(webhookSecret, { type: argon2.argon2id });
 
+  const baseUrl = env.APP_BASE_URL.replace(/\/$/, "");
+  const mockGameUrl = `${baseUrl}/api/mock-game`;
+
   const studio = await prisma.studio.upsert({
     where: { slug: "gridlock" },
     update: {
       name: "Gridlock Games",
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
-      webhookUrl: "http://localhost:3000/api/health",
+      webhookUrl: `${mockGameUrl}/webhook`,
+      webhookSecretHash,
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
-      integrationMode: "WEBHOOK_PUSH",
+      integrationMode: "API_PULL",
+      apiBaseUrl: mockGameUrl,
     },
     create: {
       name: "Gridlock Games",
@@ -48,11 +115,27 @@ async function main() {
       description: "Anchor partner — Neon Overdrive gear.",
       brand: GRIDLOCK_BRAND,
       payoutWalletAddress: GRIDLOCK_PAYOUT_WALLET,
-      webhookUrl: "http://localhost:3000/api/health",
+      webhookUrl: `${mockGameUrl}/webhook`,
       webhookSecretHash,
       status: "ACTIVE",
       platformFeeBps: env.PLATFORM_FEE_BPS,
-      integrationMode: "WEBHOOK_PUSH",
+      integrationMode: "API_PULL",
+      apiBaseUrl: mockGameUrl,
+    },
+  });
+
+  const studioOwnerPasswordHash = await argon2.hash(env.STUDIO_OWNER_PASSWORD, {
+    type: argon2.argon2id,
+  });
+  await prisma.user.upsert({
+    where: { username: env.STUDIO_OWNER_USERNAME },
+    update: { passwordHash: studioOwnerPasswordHash, role: "STUDIO_OWNER", studioId: studio.id, isActive: true },
+    create: {
+      username: env.STUDIO_OWNER_USERNAME,
+      passwordHash: studioOwnerPasswordHash,
+      role: "STUDIO_OWNER",
+      studioId: studio.id,
+      isActive: true,
     },
   });
 
@@ -60,6 +143,11 @@ async function main() {
     where: { studioId_externalId: { studioId: studio.id, externalId: "sword_skin_01" } },
     update: {
       name: "Sword Skin",
+      description: "Acid-lime rim light pulses along the edge of this legendary blade.",
+      imageUrl: generatedImage(
+        "cyberpunk neon sword game item icon, glowing acid green edge, black background, detailed sci-fi digital art, centered",
+        101,
+      ),
       priceAmount: new Prisma.Decimal("1"),
       priceCurrency: "USDT",
       isActive: true,
@@ -68,7 +156,11 @@ async function main() {
       studioId: studio.id,
       externalId: "sword_skin_01",
       name: "Sword Skin",
-      description: "The demo Sword Skin — acid-lime rim light.",
+      description: "Acid-lime rim light pulses along the edge of this legendary blade.",
+      imageUrl: generatedImage(
+        "cyberpunk neon sword game item icon, glowing acid green edge, black background, detailed sci-fi digital art, centered",
+        101,
+      ),
       priceAmount: new Prisma.Decimal("1"),
       priceCurrency: "USDT",
       rarity: "LEGENDARY",
@@ -79,15 +171,20 @@ async function main() {
     },
   });
 
+  const allItemIds = [swordSkin.id];
+
   for (const f of FILLER_ITEMS) {
-    await prisma.item.upsert({
+    const item = await prisma.item.upsert({
       where: { studioId_externalId: { studioId: studio.id, externalId: f.externalId } },
-      update: {},
+      update: {
+        imageUrl: f.imageUrl,
+      },
       create: {
         studioId: studio.id,
         externalId: f.externalId,
         name: f.name,
         description: f.description,
+        imageUrl: f.imageUrl,
         priceAmount: new Prisma.Decimal(f.price),
         priceCurrency: "USDT",
         rarity: f.rarity,
@@ -97,15 +194,24 @@ async function main() {
         syncedAt: new Date(),
       },
     });
+    allItemIds.push(item.id);
   }
+
+  // In local dev, reset active items to the seed catalogue so the storefront
+  // stays in sync with the mock game server defaults after every docker compose up.
+  const seedExternalIds = ["sword_skin_01", ...FILLER_ITEMS.map((f) => f.externalId)];
+  await prisma.item.updateMany({
+    where: { studioId: studio.id, externalId: { notIn: seedExternalIds } },
+    data: { isActive: false },
+  });
 
   await prisma.shop.upsert({
     where: { studioId: studio.id },
-    update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], publishedAt: new Date() },
+    update: { status: "PUBLISHED", featuredItemIds: [swordSkin.id], layout: { mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: allItemIds }] }, publishedAt: new Date() },
     create: {
       studioId: studio.id,
       status: "PUBLISHED",
-      layout: { mode: "grid", sections: [{ title: "FEATURED", itemIds: [swordSkin.id] }] },
+      layout: { mode: "grid", sections: [{ id: "all", title: "ALL", itemIds: allItemIds }] },
       theme: GRIDLOCK_BRAND,
       featuredItemIds: [swordSkin.id],
       publishedAt: new Date(),
@@ -113,7 +219,7 @@ async function main() {
   });
 
   console.log(
-    `Seed complete: admin=${admin.username} studio=${studio.slug} swordSkin=${swordSkin.id} (${FILLER_ITEMS.length} filler items)`,
+    `Seed complete: admin=${admin.username} studio=${studio.slug} swordSkin=${swordSkin.id} (${FILLER_ITEMS.length} filler items) studioOwner=${env.STUDIO_OWNER_USERNAME}`,
   );
 }
 

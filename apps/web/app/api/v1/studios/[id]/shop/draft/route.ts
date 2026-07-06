@@ -15,8 +15,11 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
     return Response.json({ error: "forbidden" }, { status });
   }
 
-  const parsed = ShopDraftInputSchema.safeParse(await req.json().catch(() => null));
+  const rawBody = await req.text();
+  console.log(`[shop/draft PUT] studioId=${studioId} body=${rawBody}`);
+  const parsed = ShopDraftInputSchema.safeParse(JSON.parse(rawBody));
   if (!parsed.success) {
+    console.error("[shop/draft PUT] Zod error:", JSON.stringify(parsed.error.flatten()));
     return Response.json({ error: "invalid", details: parsed.error.flatten() }, { status: 400 });
   }
 

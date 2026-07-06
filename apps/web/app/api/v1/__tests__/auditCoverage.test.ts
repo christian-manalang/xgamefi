@@ -5,6 +5,7 @@ import { join } from "node:path";
 const API = join(__dirname, "..");
 const SENSITIVE: Array<[string, string]> = [
   ["admin/settings/route.ts", "platform.settings.update"],
+  ["auth/register/route.ts", "studio.self_onboard"],
   ["studios/route.ts", "studio.onboard"],
   ["studios/[id]/route.ts", "studio.update"],
   ["studios/[id]/api-keys/route.ts", "apikey.issue"],
@@ -12,6 +13,7 @@ const SENSITIVE: Array<[string, string]> = [
   ["studios/[id]/webhook/route.ts", "webhook.config"],
   ["studios/[id]/webhooks/deliveries/[deliveryId]/retry/route.ts", "webhook.retry"],
   ["studios/[id]/webhooks/test/route.ts", "webhook.test"],
+  ["studios/[id]/items/[itemId]/route.ts", "item.override"],
 ];
 
 describe("audit-log coverage on sensitive actions", () => {

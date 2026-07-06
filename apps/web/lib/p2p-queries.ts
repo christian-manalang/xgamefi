@@ -1,9 +1,59 @@
 import { prisma, Prisma } from "@xgamefi/db";
-import { assertOwnsItem } from "@xgamefi/shared/p2p/ownership";
-import { toP2PListingDto, toP2PTradeDto, type P2PListingDto, type P2PTradeDto } from "@xgamefi/shared/dto";
+import { assertOwnsItem, refreshOwnership } from "@xgamefi/shared/p2p/ownership";
+import { toP2PListingDto, toP2PTradeDto, type P2PListingDto, type P2PTradeDto, type P2PListingStatus, type P2PTradeStatus } from "@xgamefi/shared/dto";
 import { feeAmount, netAmount, toStellarAmount } from "@xgamefi/shared/money";
 import { buildPaymentXdr, type Asset } from "@xgamefi/shared/stellar";
 import { env } from "@xgamefi/config/env";
+
+export type SellableItem = {
+  itemId: string;
+  name: string;
+  imageUrl: string | null;
+  rarity: string | null;
+  category: string | null;
+  quantity: number;
+};
+
+export async function getMySellableItems(slug: string, playerId: string): Promise<SellableItem[]> {
+  const shop = await prisma.shop.findFirst({
+    where: { studio: { slug }, status: "PUBLISHED" },
+    select: { studioId: true },
+  });
+  if (!shop) return [];
+
+  const ownerships = await prisma.itemOwnership.findMany({
+    where: {
+      playerId,
+      studioId: shop.studioId,
+      quantity: { gt: 0 },
+      lockedForListingId: null,
+    },
+    include: { item: true },
+  });
+
+  await Promise.all(
+    ownerships.map((o) => refreshOwnership({ studioId: shop.studioId, playerId, itemId: o.itemId })),
+  );
+
+  const refreshed = await prisma.itemOwnership.findMany({
+    where: {
+      playerId,
+      studioId: shop.studioId,
+      quantity: { gt: 0 },
+      lockedForListingId: null,
+    },
+    include: { item: true },
+  });
+
+  return refreshed.map((o) => ({
+    itemId: o.itemId,
+    name: o.item.name,
+    imageUrl: o.item.imageUrl,
+    rarity: o.item.rarity,
+    category: o.item.category,
+    quantity: o.quantity,
+  }));
+}
 
 export async function createListing(input: {
   sellerPlayerId: string;
@@ -123,4 +173,93 @@ export async function createTradeQuote(input: {
 export async function getTrade(tradeId: string): Promise<P2PTradeDto | null> {
   const row = await prisma.p2PTrade.findUnique({ where: { id: tradeId } });
   return row ? toP2PTradeDto(row) : null;
+}
+
+export type StudioP2PListing = P2PListingDto & {
+  itemName: string;
+  sellerHandle: string | null;
+  sellerWallet: string;
+};
+
+export async function getStudioP2PListings(
+  studioId: string,
+  opts: {
+    status?: P2PListingStatus;
+    page: number;
+    pageSize: number;
+  },
+): Promise<{ listings: StudioP2PListing[]; total: number; page: number; pageSize: number }> {
+  const where: Prisma.P2PListingWhereInput = { studioId };
+  if (opts.status) where.status = opts.status;
+
+  const [rows, total] = await Promise.all([
+    prisma.p2PListing.findMany({
+      where,
+      include: {
+        item: { select: { name: true } },
+        seller: { select: { walletAddress: true, handle: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (opts.page - 1) * opts.pageSize,
+      take: opts.pageSize,
+    }),
+    prisma.p2PListing.count({ where }),
+  ]);
+
+  return {
+    listings: rows.map((row) => ({
+      ...toP2PListingDto(row),
+      itemName: row.item.name,
+      sellerHandle: row.seller.handle,
+      sellerWallet: row.seller.walletAddress,
+    })),
+    total,
+    page: opts.page,
+    pageSize: opts.pageSize,
+  };
+}
+
+export type StudioP2PTrade = P2PTradeDto & {
+  itemName: string;
+  buyerWallet: string;
+  sellerWallet: string;
+};
+
+export async function getStudioP2PTrades(
+  studioId: string,
+  opts: {
+    status?: P2PTradeStatus;
+    page: number;
+    pageSize: number;
+  },
+): Promise<{ trades: StudioP2PTrade[]; total: number; page: number; pageSize: number }> {
+  const where: Prisma.P2PTradeWhereInput = { listing: { studioId } };
+  if (opts.status) where.status = opts.status;
+
+  const [rows, total] = await Promise.all([
+    prisma.p2PTrade.findMany({
+      where,
+      include: {
+        listing: { include: { item: { select: { name: true } } } },
+        buyer: { select: { walletAddress: true } },
+        seller: { select: { walletAddress: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (opts.page - 1) * opts.pageSize,
+      take: opts.pageSize,
+    }),
+    prisma.p2PTrade.count({ where }),
+  ]);
+
+  return {
+    trades: rows.map((row) => ({
+      ...toP2PTradeDto(row),
+      itemName: row.listing.item.name,
+      buyerWallet: row.buyer.walletAddress,
+      sellerWallet: row.seller.walletAddress,
+    })),
+    total,
+    page: opts.page,
+    pageSize: opts.pageSize,
+  };
 }

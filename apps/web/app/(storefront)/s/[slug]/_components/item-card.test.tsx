@@ -20,6 +20,7 @@ const item: ItemDto = {
   category: "skins",
   metadata: {},
   isActive: true,
+  isListed: true,
   syncedAt: null,
 };
 
@@ -28,7 +29,7 @@ describe("ItemCard", () => {
     render(<ItemCard item={item} />);
     expect(screen.getByText("Sword Skin")).toBeInTheDocument();
     expect(screen.getByText(/sword_skin_01/i)).toBeInTheDocument();
-    expect(screen.getByText(/1\.0000000/)).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.textContent === "1 USDT")).toBeInTheDocument();
     expect(screen.getByText("USDT")).toBeInTheDocument();
     expect(screen.getByText("LEGENDARY")).toBeInTheDocument();
   });

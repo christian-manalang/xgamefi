@@ -19,21 +19,28 @@ export const RemoteItemsSchema = z.array(RemoteItem);
 
 export const ItemOverrideInput = z
   .object({
+    name: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    imageUrl: z.string().url().nullable().optional(),
+    category: z.string().nullable().optional(),
+    rarity: z.string().nullable().optional(),
     priceAmount: numericString.optional(),
     priceCurrency: currency.optional(),
     stock: z.number().int().nonnegative().nullable().optional(),
     saleStartsAt: z.string().datetime().nullable().optional(),
     saleEndsAt: z.string().datetime().nullable().optional(),
     featured: z.boolean().optional(),
+    isListed: z.boolean().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "at least one field required" });
 export type ItemOverrideInput = z.infer<typeof ItemOverrideInput>;
 
 export const ShopItemsQuery = z.object({
   q: z.string().trim().min(1).optional(),
-  category: z.string().min(1).optional(),
-  rarity: z.string().min(1).optional(),
+  category: z.string().optional(),
+  rarity: z.string().optional(),
   featured: z.coerce.boolean().optional(),
+  sort: z.enum(["featured", "price_asc", "price_desc", "newest"]).optional(),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(60).default(24),
 });
