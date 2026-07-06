@@ -16,6 +16,7 @@ const row = {
   category: "skins",
   metadata: { dmg: 10 },
   isActive: true,
+  isListed: true,
   syncedAt: new Date("2026-06-23T12:00:00.000Z"),
   createdAt: new Date("2026-06-01T00:00:00.000Z"),
   updatedAt: new Date("2026-06-23T12:00:00.000Z"),
@@ -36,6 +37,7 @@ describe("toItemDto", () => {
       category: "skins",
       metadata: { dmg: 10 },
       isActive: true,
+      isListed: true,
       syncedAt: "2026-06-23T12:00:00.000Z",
     });
   });

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireStudio: vi.fn(),
   scopeToStudio: vi.fn(),
+  studioFindUnique: vi.fn(),
   findUnique: vi.fn(),
   update: vi.fn(),
 }));
@@ -13,7 +14,10 @@ vi.mock("../../../../../../../lib/auth/guards", () => ({
 }));
 vi.mock("@xgamefi/db", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@xgamefi/db")>();
-  return { ...actual, prisma: { shop: { findUnique: mocks.findUnique, update: mocks.update } } };
+  return { ...actual, prisma: {
+    shop: { findUnique: mocks.findUnique, update: mocks.update },
+    studio: { findUnique: mocks.studioFindUnique },
+  } };
 });
 
 import { POST } from "./route";
@@ -29,6 +33,7 @@ function req() {
 beforeEach(() => {
   mocks.requireStudio.mockReset().mockResolvedValue({ kind: "user", role: "STUDIO_OWNER", studioId: "stu-1" });
   mocks.scopeToStudio.mockReset();
+  mocks.studioFindUnique.mockReset().mockResolvedValue({ status: "ACTIVE" });
   mocks.findUnique.mockReset().mockResolvedValue({ draftLayout: draft });
   mocks.update.mockReset().mockResolvedValue({
     id: "shop-1", studioId: "stu-1", status: "PUBLISHED",

@@ -20,7 +20,7 @@ const itemRow = {
   id: "i1", studioId: "stu1", externalId: "sword_skin_01", name: "Sword Skin",
   description: null, imageUrl: null, priceAmount: { toString: () => "1", toFixed: () => "1.0000000" },
   priceCurrency: "USDT", stock: null, rarity: "LEGENDARY", category: "skins",
-  metadata: {}, isActive: true, syncedAt: null,
+  metadata: {}, isActive: true, isListed: true, syncedAt: null,
 };
 
 beforeEach(() => {
@@ -34,7 +34,7 @@ describe("getShopItems", () => {
     const res = await getShopItems("gridlock", { q: "sword", page: 1, pageSize: 24 });
     expect(mocks.itemFindMany).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
-        studioId: "stu1", isActive: true,
+        studioId: "stu1", isActive: true, isListed: true,
         name: { contains: "sword", mode: "insensitive" },
       }),
       skip: 0, take: 24,

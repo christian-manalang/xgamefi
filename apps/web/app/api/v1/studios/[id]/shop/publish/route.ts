@@ -1,7 +1,7 @@
 import { prisma } from "@xgamefi/db";
 import { ShopLayoutSchema } from "@xgamefi/shared";
 import { toShopDto } from "@xgamefi/shared/dto";
-import { requireStudio, scopeToStudio } from "../../../../../../../lib/auth/guards";
+import { requireStudio, scopeToStudio } from "@/lib/auth/guards";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }): Promise<Response> {
   const { id: studioId } = await ctx.params;
@@ -13,6 +13,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   } catch (e: unknown) {
     const status = (e as { status?: number }).status ?? 401;
     return Response.json({ error: "forbidden" }, { status });
+  }
+
+  const studio = await prisma.studio.findUnique({ where: { id: studioId }, select: { status: true } });
+  if (studio?.status !== "ACTIVE") {
+    return Response.json({ error: { code: "STUDIO_INACTIVE" } }, { status: 400 });
   }
 
   const current = await prisma.shop.findUnique({ where: { studioId }, select: { draftLayout: true } });

@@ -31,9 +31,13 @@ function LibRow({
         <div className="flex aspect-square w-12 items-center justify-center bg-surface-container-high font-mono text-[10px] uppercase text-on-surface-variant">NO IMG</div>
       )}
       <div className="flex-1">
-        <p className="font-display text-on-surface">{item.name}</p>
+        <p className={`font-display ${item.isListed ? "text-on-surface" : "text-on-surface-variant line-through"}`}>{item.name}</p>
         <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary-fixed">
           {item.price.amount} {item.price.currency}
+        </p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-outline">
+          {item.stock === null ? "∞ stock" : `${item.stock} left`}
+          {item.syncedAt ? ` · synced ${new Date(item.syncedAt).toLocaleDateString()}` : ""}
         </p>
       </div>
       <button

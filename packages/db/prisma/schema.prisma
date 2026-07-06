@@ -222,6 +222,7 @@ model Item {
   category      String?
   metadata      Json?
   isActive      Boolean  @default(true)
+  isListed      Boolean  @default(true)
   syncedAt      DateTime?
   orders        Order[]
   ownerships    ItemOwnership[]

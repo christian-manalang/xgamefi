@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   shopUpdate: vi.fn(),
   shopFindUnique: vi.fn(),
+  auditCreate: vi.fn(),
 }));
 
 vi.mock("../../../../../../../lib/auth/guards", () => ({
@@ -18,6 +19,7 @@ vi.mock("@xgamefi/db", async (importOriginal) => {
   return { ...actual, prisma: {
     item: { findFirst: mocks.findFirst, update: mocks.update },
     shop: { findUnique: mocks.shopFindUnique, update: mocks.shopUpdate },
+    auditLog: { create: mocks.auditCreate },
   } };
 });
 
@@ -33,7 +35,7 @@ beforeEach(() => {
     id: "i1", studioId: "stu1", externalId: "sword_skin_01", name: "Sword Skin",
     description: null, imageUrl: null,
     priceAmount: { toString: () => "2.5", toFixed: () => "2.5000000" },
-    priceCurrency: "USDT", stock: 5, rarity: null, category: null, metadata: {}, isActive: true, syncedAt: null,
+    priceCurrency: "USDT", stock: 5, rarity: null, category: null, metadata: {}, isActive: true, isListed: true, syncedAt: null,
   });
   mocks.shopFindUnique.mockReset().mockResolvedValue({ studioId: "stu1", featuredItemIds: [] });
   mocks.shopUpdate.mockReset();
@@ -65,5 +67,19 @@ describe("PATCH /studios/:id/items/:itemId", () => {
       method: "PATCH", body: JSON.stringify({ stock: 1 }),
     }), ctx);
     expect(res.status).toBe(404);
+  });
+  it("updates metadata fields and isListed", async () => {
+    const res = await PATCH(new Request("https://x", {
+      method: "PATCH",
+      body: JSON.stringify({ name: "Renamed", category: "skin", isListed: false }),
+    }), ctx);
+    expect(res.status).toBe(200);
+    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ name: "Renamed", category: "skin", isListed: false }),
+    }));
+  });
+  it("writes an audit log", async () => {
+    await PATCH(new Request("https://x", { method: "PATCH", body: JSON.stringify({ stock: 1 }) }), ctx);
+    expect(mocks.auditCreate).toHaveBeenCalled();
   });
 });
