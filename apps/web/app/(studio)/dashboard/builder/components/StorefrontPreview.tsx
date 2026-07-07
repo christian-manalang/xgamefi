@@ -15,10 +15,11 @@ export function StorefrontPreview({
   featuredItemIds: string[];
   items: ItemDto[];
 }) {
+  const visibleItems = items.filter((i) => i.isListed);
   return (
     <div className="border-2 border-outline-variant bg-surface-container-lowest p-4">
       <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.1em] text-outline">LIVE_PREVIEW · PLAYER_VIEW</p>
-      <StorefrontGrid layout={layout} theme={theme} featuredItemIds={featuredItemIds} items={items} slug="preview" />
+      <StorefrontGrid layout={layout} theme={theme} featuredItemIds={featuredItemIds} items={visibleItems} slug="preview" />
     </div>
   );
 }
