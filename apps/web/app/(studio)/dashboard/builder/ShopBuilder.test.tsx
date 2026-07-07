@@ -25,6 +25,7 @@ describe("ShopBuilder", () => {
     expect(screen.getByTestId("config-empty")).toBeInTheDocument();
     expect(screen.getByTestId("canvas")).toBeInTheDocument();
     expect(screen.getByText("ITEM_LIBRARY")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("SHOW_PREVIEW ▼"));
     expect(screen.getAllByTestId("storefront-grid").length).toBeGreaterThan(0);
   });
 

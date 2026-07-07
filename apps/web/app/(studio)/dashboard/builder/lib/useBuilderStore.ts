@@ -29,6 +29,7 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
     case "SET_MODE":
       return { ...state, layout: { ...state.layout, mode: action.mode } };
     case "ADD_ITEM":
+      console.log("[builder reducer] ADD_ITEM", action.sectionId, action.itemId);
       return {
         ...state,
         layout: mapSections(state.layout, (s) => {

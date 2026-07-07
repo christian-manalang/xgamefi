@@ -43,10 +43,11 @@ function LibRow({
       <button
         type="button"
         data-testid={`lib-add-${item.id}`}
+        disabled={placed}
         onClick={(e) => { e.stopPropagation(); onAdd(item.id); }}
-        className="border-2 border-outline px-2 py-1 font-mono text-[10px] uppercase tracking-[0.1em] hover:border-primary-fixed hover:text-primary-fixed"
+        className={`border-2 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.1em] ${placed ? "border-outline-variant text-outline" : "border-outline hover:border-primary-fixed hover:text-primary-fixed"}`}
       >
-        ADD
+        {placed ? "PLACED" : "ADD"}
       </button>
     </div>
   );
@@ -64,10 +65,11 @@ export function ItemLibrary({
   onSelect: (itemId: string) => void;
 }) {
   const placed = new Set(placedItemIds);
+  const sorted = [...items].sort((a, b) => Number(placed.has(a.id)) - Number(placed.has(b.id)));
   return (
     <aside className="flex w-80 shrink-0 flex-col gap-2 overflow-y-auto border-l-2 border-outline-variant bg-surface-container-lowest p-3">
       <h2 className="font-mono text-[12px] uppercase tracking-[0.1em] text-outline">ITEM_LIBRARY</h2>
-      {items.map((item) => (
+      {sorted.map((item) => (
         <LibRow key={item.id} item={item} placed={placed.has(item.id)} onAdd={onAdd} onSelect={onSelect} />
       ))}
     </aside>
