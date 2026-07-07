@@ -26,6 +26,7 @@ export function ShopBuilder({ shop, items }: { shop: ShopDto; items: ItemDto[] }
   const [itemMap, setItemMap] = useState<Record<string, ItemDto>>(Object.fromEntries(items.map((i) => [i.id, i])));
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   async function refreshItems() {
     const res = await fetch(`/api/v1/studios/${shop.studioId}/items`);
@@ -56,7 +57,9 @@ export function ShopBuilder({ shop, items }: { shop: ShopDto; items: ItemDto[] }
   function onDragEnd(e: DragEndEvent) {
     const itemId = e.active.data.current?.itemId as string | undefined;
     if (itemId && e.over?.id === "canvas-drop") {
-      dispatch({ type: "ADD_ITEM", sectionId: firstSectionId, itemId });
+      const sectionId = state.layout.sections[0]?.id ?? firstSectionId;
+      dispatch({ type: "ADD_ITEM", sectionId, itemId });
+      dispatch({ type: "SELECT_ITEM", itemId });
     }
   }
 
@@ -110,12 +113,29 @@ export function ShopBuilder({ shop, items }: { shop: ShopDto; items: ItemDto[] }
               onToggleFeatured={(id) => dispatch({ type: "TOGGLE_FEATURED", itemId: id })}
               onSelect={(id) => dispatch({ type: "SELECT_ITEM", itemId: id })}
             />
-            <div className="overflow-y-auto px-6 pb-6">
-              <StorefrontPreview layout={state.layout} theme={shop.theme} featuredItemIds={state.featuredItemIds} items={allItems} />
+            <div className="flex flex-col gap-2 overflow-hidden px-6 pb-6">
+              <button
+                type="button"
+                onClick={() => setPreviewOpen((v) => !v)}
+                className="self-start font-mono text-[10px] uppercase tracking-[0.1em] text-outline hover:text-primary-fixed"
+              >
+                {previewOpen ? "HIDE_PREVIEW ▲" : "SHOW_PREVIEW ▼"}
+              </button>
+              {previewOpen && (
+                <div className="overflow-y-auto">
+                  <StorefrontPreview layout={state.layout} theme={shop.theme} featuredItemIds={state.featuredItemIds} items={allItems} />
+                </div>
+              )}
             </div>
           </div>
           <ItemLibrary items={allItems} placedItemIds={placedIds}
-            onAdd={(id) => dispatch({ type: "ADD_ITEM", sectionId: firstSectionId, itemId: id })}
+            onAdd={(id) => {
+              console.log("[builder] ADD clicked", id, "sections", state.layout.sections.map((s) => s.id));
+              const sectionId = state.layout.sections[0]?.id ?? firstSectionId;
+              dispatch({ type: "ADD_ITEM", sectionId, itemId: id });
+              dispatch({ type: "SELECT_ITEM", itemId: id });
+              console.log("[builder] dispatched ADD_ITEM to section", sectionId);
+            }}
             onSelect={(id) => dispatch({ type: "SELECT_ITEM", itemId: id })}
           />
         </div>
