@@ -22,9 +22,12 @@ function LibRow({
       data-placed={placed}
       onClick={() => onSelect(item.id)}
       className={`flex items-center gap-3 border-2 border-outline-variant bg-surface-container-low p-2 ${placed ? "opacity-40" : ""}`}
-      {...attributes}
-      {...listeners}
     >
+      <div
+        className="flex flex-1 cursor-pointer items-center gap-3"
+        {...attributes}
+        {...listeners}
+      >
       {item.imageUrl ? (
         <img src={item.imageUrl} alt="" className="aspect-square w-12 object-cover" />
       ) : (
@@ -39,6 +42,7 @@ function LibRow({
           {item.stock === null ? "∞ stock" : `${item.stock} left`}
           {item.syncedAt ? ` · synced ${new Date(item.syncedAt).toLocaleDateString()}` : ""}
         </p>
+      </div>
       </div>
       <button
         type="button"
