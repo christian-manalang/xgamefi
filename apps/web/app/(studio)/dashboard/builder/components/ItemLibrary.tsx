@@ -20,11 +20,11 @@ function LibRow({
       ref={setNodeRef}
       data-testid={`lib-item-${item.id}`}
       data-placed={placed}
+      onClick={() => onSelect(item.id)}
       className={`flex items-center gap-3 border-2 border-outline-variant bg-surface-container-low p-2 ${placed ? "opacity-40" : ""}`}
     >
       <div
         className="flex flex-1 cursor-pointer items-center gap-3"
-        onClick={() => onSelect(item.id)}
         {...attributes}
         {...listeners}
       >
