@@ -86,3 +86,15 @@ export async function getStudioBrand(slug: string): Promise<Record<string, unkno
   if (!studio) return null;
   return { ...(studio.brand as Record<string, unknown> | null ?? {}), name: studio.name };
 }
+
+export type PublicShop = { slug: string; name: string; logoUrl: string | null };
+
+export async function getPublishedShops(): Promise<PublicShop[]> {
+  const rows = await prisma.shop.findMany({
+    where: { status: "PUBLISHED" },
+    select: {
+      studio: { select: { slug: true, name: true, logoUrl: true } },
+    },
+  });
+  return rows.map((r) => ({ slug: r.studio.slug, name: r.studio.name, logoUrl: r.studio.logoUrl }));
+}

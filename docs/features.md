@@ -2,6 +2,15 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Auth redirect on /home and Browse Shops button
+
+Redirects unauthenticated users from the home page and allows players/users to browse available published shops from the login page.
+
+- **Authentication Redirect:** `apps/web/app/page.tsx` — redirects unauthenticated users visiting the home (`/`) page to `/login`.
+- **Browse Shops Component:** `apps/web/components/browse-shops.tsx` — a client component modal that fetches and lists all published shops.
+- **Shop Directory API:** `GET /api/v1/shops` (`apps/web/app/api/v1/shops/route.ts`) — a new endpoint that retrieves a list of published shops using `getPublishedShops()` from `apps/web/lib/catalogue-queries.ts`.
+- **UI Integration:** `apps/web/app/(auth)/login/page.tsx` — embeds the `<BrowseShops />` component at the bottom of the login page.
+
 ## Self-onboarding, builder CRUD, and stock sync
 
 Added the missing pieces needed for a studio to set up and run a real shop without admin intervention.
