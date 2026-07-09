@@ -27,6 +27,7 @@ vi.mock("@xgamefi/db", async () => {
     ...actual,
     prisma: {
       $transaction: mocks.$transaction,
+      order: { findUnique: mocks.orderFindUnique },
       ledgerEntry: { count: mocks.ledgerEntryCount },
       webhookDelivery: { count: mocks.webhookDeliveryCount },
     },

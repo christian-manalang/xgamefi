@@ -3,6 +3,7 @@ import { env } from "@xgamefi/config/env";
 import { verifyPayment, type Asset } from "./stellar";
 import { getQueue } from "./queues";
 import { publishOrderEvent } from "./order-events";
+import { deliverMockGameWebhook, isMockGameWebhook } from "./mock-webhook";
 
 export type VerifyAdvanceResult =
   | { status: "PAID"; orderId: string; referralId?: string }
@@ -132,6 +133,20 @@ export async function verifyAndAdvanceOrder(args: {
         `verifyAndAdvanceOrder: enqueuing missing jobs for order ${orderId} (payout=${payoutExists}, delivery=${deliveryExists})`,
       );
     }
+
+    // Fast-path for demo orders using the bundled mock-game webhook: attempt
+    // synchronous delivery in the web service so the buyer sees DELIVERED
+    // immediately even if the worker queue is delayed or unavailable.
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { studio: { select: { webhookUrl: true } } },
+    });
+    if (order?.studio?.webhookUrl && isMockGameWebhook(order.studio.webhookUrl)) {
+      void deliverMockGameWebhook(order.id).catch((err: unknown) =>
+        console.error("verifyAndAdvanceOrder: mock-game fallback failed", err),
+      );
+    }
+
     await publishOrderEvent(args.orderId, { paymentStatus: "PAID" }).catch((err) =>
       console.error(`verifyAndAdvanceOrder: failed to publish event for ${args.orderId}`, err),
     );

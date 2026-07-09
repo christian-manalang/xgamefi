@@ -73,6 +73,7 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
     const orderId = job.data.orderId;
     const order = await prisma.order.findUnique({ where: { id: orderId }, include: { studio: true, item: true } });
     if (!order) throw new Error(`webhook-delivery: order ${orderId} not found`);
+    if (order.deliveryStatus === "DELIVERED") return { status: "DELIVERED" };
     if (order.paymentStatus !== "PAID") throw new Error(`webhook-delivery: order ${orderId} is not PAID`);
     if (!order.studio?.webhookUrl) throw new Error(`webhook-delivery: studio ${order.studioId} has no webhookUrl`);
     studioId = order.studio.id;
