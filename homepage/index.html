@@ -12,343 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
-<style>
-:root {
-  --primary-glow: rgba(195, 244, 0, 0.4);
-  --secondary-glow: rgba(255, 0, 255, 0.3);
-  --tertiary-glow: rgba(125, 244, 255, 0.28);
-  --bg: #131313;
-  --lime: #c3f400;
-  --lime-dim: #abd600;
-  --magenta: #fe00fe;
-  --cyan: #7df4ff;
-  --ink: #e5e2e1;
-  --muted: #c4c9ac;
-  --outline: #8e9379;
-  --border: #444933;
-  --panel: #1c1b1b;
-  --panel-2: #201f1f;
-  --panel-3: #2a2a2a;
-  --deep: #0e0e0e;
-  --r: 0.25rem;
-  --font-display: "Space Grotesk", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
-}
-
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font-display);
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-::selection { background: var(--lime); color: #161e00; }
-a { color: inherit; text-decoration: none; }
-
-/* material symbols */
-.symbol { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
-
-/* mono technical labels */
-.mono { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; }
-.eyebrow {
-  font-family: var(--font-mono); font-size: 12px; font-weight: 500;
-  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
-  display: inline-flex; align-items: center; gap: 8px;
-}
-.eyebrow::before { content: ""; width: 22px; height: 2px; background: var(--lime); display: inline-block; }
-
-/* clipped corners (signature) */
-.clip-corner { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
-.clip-corner-lg { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 28px), calc(100% - 28px) 100%, 0 100%); }
-.clip-tag { clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px); }
-.skew-btn { transform: skewX(-12deg); }
-.skew-btn > * { transform: skewX(12deg); display: inline-block; }
-
-/* industrial border */
-.industrial { border: 2px solid var(--lime); position: relative; }
-.industrial::before { content: ""; position: absolute; top: -5px; left: 14px; width: 26px; height: 2px; background: var(--lime); }
-
-/* neon glow */
-.glow-lime { box-shadow: 0 0 18px var(--primary-glow); }
-.glow-magenta { box-shadow: 0 0 18px var(--secondary-glow); }
-.text-glow { text-shadow: 0 0 18px var(--primary-glow); }
-
-/* scanline overlay (decorative, reduced-motion safe) */
-.scanlines::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.035) 0 1px, transparent 1px 3px);
-  mix-blend-mode: overlay; opacity: 0.5;
-}
-
-/* ── NAV ───────────────────────────────────────────────────────── */
-.nav {
-  position: sticky; top: 0; z-index: 80; height: 80px;
-  background: rgba(19,19,19,0.82); backdrop-filter: blur(10px);
-  border-bottom: 2px solid var(--primary);
-  box-shadow: 0 6px 24px -10px var(--primary-glow);
-}
-.nav-inner { max-width: 1440px; margin: 0 auto; height: 100%; padding: 0 64px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.brand { display: flex; align-items: center; gap: 14px; }
-.brand .mark { width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(0 0 10px var(--primary-glow)); }
-.wordmark { font-family: var(--font-display); font-style: italic; font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: var(--ink); }
-.wordmark b { color: var(--lime); font-weight: 700; }
-.nav-links { display: flex; align-items: center; gap: 28px; }
-.nav-links a { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); transition: color .18s; }
-.nav-links a:hover { color: var(--lime); }
-.nav-cta { display: inline-flex; align-items: center; }
-.btn {
-  font-family: var(--font-mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em;
-  padding: 12px 22px; cursor: pointer; transition: transform .12s, box-shadow .18s, background .18s, color .18s;
-  display: inline-flex; align-items: center; gap: 10px; color: var(--on-primary-fixed, #161e00);
-  background: var(--lime); border: 2px solid var(--lime); clip-path: polygon(0 0, 100% 0, 100% 100%, 12px 100%, 0 calc(100% - 12px));
-}
-.btn:hover { box-shadow: 0 0 22px var(--primary-glow); transform: translateY(-1px); }
-.btn:active { transform: translateY(0) scale(.98); }
-.btn-ghost { background: transparent; color: var(--ink); border-color: var(--outline); }
-.btn-ghost:hover { color: var(--lime); border-color: var(--lime); box-shadow: 0 0 18px var(--primary-glow); background: transparent; }
-.btn-pink { background: transparent; color: var(--magenta); border-color: var(--magenta); }
-.btn-pink:hover { box-shadow: 0 0 18px var(--secondary-glow); }
-
-/* mobile nav toggle */
-.nav-burger { display: none; background: transparent; border: 2px solid var(--outline); color: var(--ink); width: 44px; height: 44px; cursor: pointer; clip-path: polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
-
-/* ── HERO ───────────────────────────────────────────────────────── */
-.hero {
-  position: relative; overflow: hidden;
-  border-bottom: 2px solid var(--border);
-  background:
-    radial-gradient(120% 80% at 80% -10%, rgba(195,244,0,0.10), transparent 50%),
-    radial-gradient(90% 70% at 0% 110%, rgba(254,0,254,0.10), transparent 55%),
-    var(--bg);
-}
-.hero-grid {
-  max-width: 1440px; margin: 0 auto; padding: 96px 64px 120px;
-  display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center;
-}
-h1.headline {
-  font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em;
-  font-size: clamp(40px, 6vw, 76px); line-height: 0.98; margin: 22px 0 0;
-}
-h1.headline em { font-style: italic; color: var(--lime); text-shadow: 0 0 28px var(--primary-glow); }
-h1.headline .stroke { -webkit-text-stroke: 1.5px var(--ink); color: transparent; }
-.hero-sub { font-size: 18px; line-height: 1.5; color: var(--muted); max-width: 520px; margin: 26px 0 36px; }
-.hero-actions { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
-.hero-meta { display: flex; gap: 28px; margin-top: 44px; flex-wrap: wrap; }
-.hero-meta .stat .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--outline); }
-.hero-meta .stat .v { font-family: var(--font-display); font-weight: 700; font-size: 30px; color: var(--lime); margin-top: 4px; text-shadow: 0 0 16px var(--primary-glow); }
-
-/* hero image well / placeholder */
-.hero-art {
-  position: relative; aspect-ratio: 1/1; background: var(--deep);
-  border: 2px solid var(--border); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 32px), calc(100% - 32px) 100%, 0 100%);
-  overflow: hidden;
-}
-.hero-art .scanlines::after { opacity: .6; }
-.art-tag {
-  position: absolute; top: 16px; left: 16px; z-index: 3;
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-  background: var(--lime); color: #161e00; padding: 6px 10px; clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px);
-}
-.art-prompt {
-  position: absolute; inset: 0; z-index: 2; padding: 56px 28px 28px;
-  display: flex; flex-direction: column; justify-content: flex-end; gap: 14px;
-  background: linear-gradient(to bottom, rgba(19,19,19,0) 30%, rgba(14,14,14,0.85) 100%);
-}
-.art-prompt .cap { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lime); }
-.art-prompt .txt { font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--muted); }
-.art-prompt .txt b { color: var(--ink); font-weight: 500; }
-/* floating glitch particles */
-.particles span { position: absolute; display: block; width: 4px; height: 4px; background: var(--lime); box-shadow: 0 0 10px var(--primary-glow); opacity: .8; }
-.particles span:nth-child(2) { background: var(--magenta); box-shadow: 0 0 10px var(--secondary-glow); left: 70%; top: 18%; }
-.particles span:nth-child(3) { background: var(--cyan); box-shadow: 0 0 10px var(--tertiary-glow); left: 24%; top: 62%; }
-.particles span:nth-child(4) { left: 82%; top: 70%; }
-.particles span:nth-child(5) { left: 40%; top: 30%; width: 3px; height: 3px; }
-
-/* marquee ticker */
-.marquee { border-top: 2px solid var(--border); border-bottom: 2px solid var(--border); background: var(--deep); overflow: hidden; }
-.marquee-track { display: flex; gap: 48px; padding: 14px 0; white-space: nowrap; animation: marq 28s linear infinite; }
-.marquee-track span { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 14px; }
-.marquee-track span b { color: var(--lime); }
-.marquee-track span i { width: 6px; height: 6px; background: var(--lime); box-shadow: 0 0 10px var(--primary-glow); display: inline-block; }
-@keyframes marq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
-/* ── SECTION SHELL ───────────────────────────────────────────────── */
-.section { max-width: 1440px; margin: 0 auto; padding: 120px 64px; }
-.section-head { max-width: 760px; margin-bottom: 56px; }
-h2.section-title {
-  font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em;
-  font-size: clamp(32px, 4vw, 52px); line-height: 1.02; margin: 18px 0 0;
-}
-h2.section-title em { font-style: italic; color: var(--lime); }
-.section-lede { font-size: 17px; line-height: 1.5; color: var(--muted); margin-top: 18px; max-width: 620px; }
-
-/* ── FEATURES BENTO ─────────────────────────────────────────────── */
-.bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
-.cell {
-  position: relative; background: var(--panel); border: 2px solid var(--border);
-  padding: 26px; min-height: 200px; display: flex; flex-direction: column; gap: 14px;
-  transition: border-color .2s, transform .2s, box-shadow .2s; overflow: hidden;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
-}
-.cell:hover { border-color: var(--lime); transform: translateY(-3px); box-shadow: 0 0 22px var(--primary-glow); }
-.cell .ic { width: 46px; height: 46px; display: grid; place-items: center; border: 2px solid var(--border); color: var(--lime); clip-path: polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
-.cell .ic .symbol { font-size: 26px; }
-.cell h3 { font-family: var(--font-display); font-weight: 600; font-size: 21px; margin: 0; letter-spacing: -0.01em; }
-.cell p { font-size: 14px; line-height: 1.5; color: var(--muted); margin: 0; }
-.cell .tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--outline); }
-.cell .tag.lime { color: var(--lime); }
-.cell .tag.pink { color: var(--magenta); }
-.cell .tag.cyan { color: var(--cyan); }
-.cell.feature { background: var(--panel-2); }
-.cell.feature .ic { color: var(--lime); border-color: var(--lime); box-shadow: 0 0 14px var(--primary-glow); }
-
-/* spans */
-.s-3 { grid-column: span 3; }
-.s-4 { grid-column: span 4; }
-.s-5 { grid-column: span 5; }
-.s-6 { grid-column: span 6; }
-.s-7 { grid-column: span 7; }
-.s-8 { grid-column: span 8; }
-.s-12 { grid-column: span 12; }
-.row-2 { grid-row: span 2; }
-
-/* image-well feature cell */
-.well { position: relative; background: var(--deep); border: 2px solid var(--border); min-height: 320px; overflow: hidden; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%); }
-.well .scanlines::after { opacity: .55; }
-.well .art-tag { background: var(--magenta); color: #500050; }
-.well .cap-block { position: absolute; inset: auto 0 0 0; padding: 22px; background: linear-gradient(to top, rgba(14,14,14,0.92), transparent); }
-.well .cap-block .cap { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan); margin-bottom: 8px; }
-.well .cap-block .txt { font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--muted); }
-.well .cap-block .txt b { color: var(--ink); }
-
-/* flow strip */
-.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 8px; }
-.flow .step { padding: 26px 22px 26px 0; position: relative; }
-.flow .step:not(:last-child)::after { content: "→"; position: absolute; right: -10px; top: 22px; color: var(--lime); font-family: var(--font-mono); }
-.flow .step .n { font-family: var(--font-mono); font-size: 11px; color: var(--lime); letter-spacing: 0.14em; }
-.flow .step h4 { font-family: var(--font-display); font-weight: 600; font-size: 17px; margin: 10px 0 6px; }
-.flow .step p { font-size: 13px; color: var(--muted); line-height: 1.45; margin: 0; }
-
-/* ── CONTACT ─────────────────────────────────────────────────────── */
-.contact { background: var(--deep); border-top: 2px solid var(--border); border-bottom: 2px solid var(--border); }
-.contact-grid { max-width: 1440px; margin: 0 auto; padding: 110px 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
-.contact h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 4.5vw, 60px); line-height: 1; letter-spacing: -0.02em; margin: 16px 0 0; }
-.contact h2 em { font-style: italic; color: var(--lime); }
-.contact p { color: var(--muted); font-size: 17px; line-height: 1.55; margin-top: 20px; max-width: 460px; }
-.email-card {
-  position: relative; background: var(--panel-2); border: 2px solid var(--lime);
-  padding: 38px 32px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0 100%);
-  box-shadow: 0 0 30px var(--primary-glow);
-}
-.email-card .label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lime); }
-.email-card a { font-family: var(--font-display); font-weight: 600; font-size: clamp(22px, 3vw, 34px); color: var(--ink); display: inline-flex; align-items: center; gap: 14px; margin-top: 14px; word-break: break-all; transition: color .18s; }
-.email-card a:hover { color: var(--lime); }
-.email-card .ic { width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--lime); color: var(--lime); clip-path: polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px)); flex: none; }
-.email-card .pulse { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 22px; }
-.email-card .pulse i { width: 8px; height: 8px; background: var(--lime); border-radius: 50%; box-shadow: 0 0 12px var(--primary-glow); animation: pulse 1.6s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
-
-/* ── FOOTER ──────────────────────────────────────────────────────── */
-footer { background: var(--deep); }
-.foot { max-width: 1440px; margin: 0 auto; padding: 72px 64px 56px; }
-.foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px; }
-.foot .brand-block .wordmark { font-size: 26px; }
-.foot .brand-block p { color: var(--muted); font-size: 14px; line-height: 1.55; margin-top: 16px; max-width: 320px; }
-.foot h5 { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--outline); margin: 0 0 18px; }
-.foot ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.foot li a { font-size: 14px; color: var(--ink); display: inline-flex; align-items: center; gap: 8px; transition: color .18s; }
-.foot li a:hover { color: var(--lime); }
-.foot li a .symbol { font-size: 16px; color: var(--lime); }
-.foot-bottom { border-top: 2px solid var(--border); margin-top: 56px; padding-top: 28px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
-.foot-bottom .legal { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--outline); display: flex; gap: 22px; flex-wrap: wrap; }
-.foot-bottom .legal a:hover { color: var(--lime); }
-.foot-bottom .copy { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--outline); }
-
-/* ── LEGAL SECTIONS (privacy / terms) ─────────────────────────────── */
-.legal-section { max-width: 980px; margin: 0 auto; padding: 110px 64px; border-top: 2px solid var(--border); }
-.legal-section .eyebrow { margin-bottom: 14px; }
-.legal-section h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 4vw, 46px); letter-spacing: -0.02em; margin: 0; }
-.legal-section h2 em { color: var(--lime); font-style: italic; }
-.legal-meta { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 16px; display: flex; gap: 24px; flex-wrap: wrap; }
-.legal-body { margin-top: 48px; display: flex; flex-direction: column; gap: 36px; }
-.legal-block h3 { font-family: var(--font-display); font-weight: 600; font-size: 20px; margin: 0 0 12px; display: flex; align-items: baseline; gap: 12px; }
-.legal-block h3 .num { font-family: var(--font-mono); font-size: 13px; color: var(--lime); letter-spacing: 0.1em; }
-.legal-block p, .legal-block li { font-size: 15px; line-height: 1.65; color: var(--muted); margin: 0; }
-.legal-block p + p { margin-top: 12px; }
-.legal-block ul { padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-.legal-block ul li { padding-left: 20px; position: relative; }
-.legal-block ul li::before { content: "▸"; position: absolute; left: 0; color: var(--lime); }
-.legal-block strong { color: var(--ink); font-weight: 600; }
-.legal-block a { color: var(--lime); border-bottom: 1px solid var(--border); }
-.legal-block a:hover { border-color: var(--lime); }
-
-/* ── COOKIE CONSENT ──────────────────────────────────────────────── */
-.cookie {
-  position: fixed; left: 24px; right: 24px; bottom: 24px; z-index: 120;
-  max-width: 460px; background: var(--panel-2); border: 2px solid var(--lime);
-  box-shadow: 0 0 30px var(--primary-glow); padding: 22px 22px 18px;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
-  transform: translateY(140%); transition: transform .5s cubic-bezier(.2,.9,.2,1);
-}
-.cookie.show { transform: translateY(0); }
-.cookie .tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lime); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-.cookie p { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0 0 16px; }
-.cookie p a { color: var(--lime); border-bottom: 1px solid var(--border); }
-.cookie-actions { display: flex; gap: 10px; }
-.cookie-actions button { flex: 1; }
-.cookie-actions .btn-ghost { color: var(--ink); }
-
-/* ── REVEAL ANIMATION ─────────────────────────────────────────────── */
-.reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
-.reveal.in { opacity: 1; transform: none; }
-.stagger > * { opacity: 0; transform: translateY(24px); }
-.stagger.in > * { opacity: 1; transform: none; transition: opacity .6s ease, transform .6s ease; }
-.stagger.in > *:nth-child(1) { transition-delay: .04s; }
-.stagger.in > *:nth-child(2) { transition-delay: .10s; }
-.stagger.in > *:nth-child(3) { transition-delay: .16s; }
-.stagger.in > *:nth-child(4) { transition-delay: .22s; }
-.stagger.in > *:nth-child(5) { transition-delay: .28s; }
-.stagger.in > *:nth-child(6) { transition-delay: .34s; }
-.stagger.in > *:nth-child(7) { transition-delay: .40s; }
-.stagger.in > *:nth-child(8) { transition-delay: .46s; }
-
-/* ── RESPONSIVE ──────────────────────────────────────────────────── */
-@media (max-width: 1100px) {
-  .hero-grid { grid-template-columns: 1fr; padding: 72px 40px 88px; gap: 44px; }
-  .hero-art { max-width: 520px; }
-  .nav-inner, .section, .contact-grid, .foot, .legal-section { padding-left: 40px; padding-right: 40px; }
-  .s-3, .s-4, .s-5 { grid-column: span 6; }
-  .s-7, .s-8 { grid-column: span 12; }
-  .foot-grid { grid-template-columns: 1fr 1fr; }
-  .flow { grid-template-columns: repeat(2, 1fr); gap: 20px; }
-  .flow .step:not(:last-child)::after { display: none; }
-}
-@media (max-width: 720px) {
-  .nav-links { display: none; position: absolute; top: 80px; left: 0; right: 0; flex-direction: column; background: var(--deep); border-bottom: 2px solid var(--lime); padding: 20px 40px; gap: 18px; }
-  .nav-links.open { display: flex; }
-  .nav-burger { display: inline-flex; align-items: center; justify-content: center; }
-  .nav-cta .btn { display: none; }
-  .nav-cta .btn.mobile { display: inline-flex; }
-  .section { padding: 80px 24px; }
-  .hero-grid { padding: 56px 24px 72px; }
-  .contact-grid, .foot, .legal-section { padding-left: 24px; padding-right: 24px; }
-  .s-3, .s-4, .s-5, .s-6, .s-7, .s-8 { grid-column: span 12; }
-  .foot-grid { grid-template-columns: 1fr; gap: 32px; }
-  .cookie { left: 16px; right: 16px; bottom: 16px; }
-}
-
-/* reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track { animation: none; }
-  .scanlines::after { display: none; }
-  .email-card .pulse i { animation: none; }
-  .reveal, .stagger > * { transition: none; opacity: 1; transform: none; }
-  html { scroll-behavior: auto; }
-}
-</style>
+<link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
 
@@ -363,8 +27,8 @@ footer { background: var(--deep); }
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
       <a href="#contact">Contact</a>
-      <a href="#privacy">Privacy</a>
-      <a href="#terms">Terms</a>
+      <a href="./privacy.html">Privacy</a>
+      <a href="./terms.html">Terms</a>
     </div>
     <div class="nav-cta">
       <a class="btn" href="https://app.xgamefi.shop" target="_blank" rel="noopener">
@@ -404,26 +68,10 @@ footer { background: var(--deep); }
       </div>
     </div>
 
-    <!-- HERO IMAGE PLACEHOLDER -->
-    <div class="hero-art scanlines reveal in" style="transition-delay:.12s">
-      <span class="art-tag">IMG // hero-banner</span>
-      <div class="particles">
-        <span style="left:18%;top:22%"></span>
-        <span></span><span></span><span></span><span></span>
-      </div>
-      <div class="art-prompt">
-        <div class="cap">// image generation prompt — hero banner</div>
-        <div class="txt">
-          <b>Wide cinematic 16:9 hero render, Neon Overdrive brutalist-cyberpunk.</b>
-          Obsidian #131313 stage. A floating angular hexagonal "storefront" panel and a glowing game-item
-          token (sword-skin core) suspended mid-air, rim-lit in acid lime #c3f400 with hot magenta #fe00fe
-          and electric cyan #7df4ff accents. Floating glitch particles, faint CRT scanlines, thin 2px
-          technical hairline borders, sharp clipped corners, no rounded edges. High-contrast 3D product
-          render of gaming hardware on obsidian. No text, no wordmark, no characters. Dark, precise,
-          energetic, a little dangerous. Pair with a bottom gradient fading to #131313 so overlaid copy
-          stays legible.
-        </div>
-      </div>
+    <!-- HERO IMAGE -->
+    <div class="hero-art scanlines reveal in" style="transition-delay:.12s;aspect-ratio:1365/633;border-color:var(--lime);border-width:2px;filter:drop-shadow(0 0 34px rgba(195,244,0,0.38))">
+      <span class="art-tag">// LIVE STOREFRONT</span>
+      <img src="./storefront.jpg" alt="xGameFi branded storefront with live game-item cards" style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block" />
     </div>
   </div>
 </section>
@@ -457,17 +105,7 @@ footer { background: var(--deep); }
   <div class="bento stagger">
     <!-- feature showcase image cell -->
     <div class="cell well s-7 row-2 scanlines" style="padding:0">
-      <span class="art-tag">IMG // storefront-preview</span>
-      <div class="cap-block">
-        <div class="cap">// image generation prompt — storefront preview</div>
-        <div class="txt">
-          <b>High-contrast 3D product render of a brutalist-cyberpunk storefront UI on an obsidian screen.</b>
-          Bento grid of game-item cards (skins, cores, blades) with sharp clipped corners and 2px hairline
-          borders, prices glowing in acid lime #c3f400, rarity tags in magenta and cyan. Scanline
-          atmosphere, glitch particles, neon rim light. Dark, premium, hardware-like. No readable text,
-          no wordmark, no characters.
-        </div>
-      </div>
+      <img src="./hero.png" alt="xGameFi branded storefront preview with game-item cards" style="width:100%;height:100%;object-fit:cover;display:block" />
     </div>
 
     <div class="cell feature s-5">
@@ -569,174 +207,6 @@ footer { background: var(--deep); }
 
 </main>
 
-<!-- ─────────────────────── PRIVACY POLICY ─────────────────────── -->
-<section class="legal-section" id="privacy">
-  <span class="eyebrow">// Legal</span>
-  <h2>Privacy <em>Policy</em></h2>
-  <div class="legal-meta">
-    <span>Last updated: June 30, 2026</span>
-    <span>Operator: Artisam Labs</span>
-    <span>Product: xGameFi</span>
-  </div>
-
-  <div class="legal-body">
-    <div class="legal-block">
-      <h3><span class="num">01</span> Introduction</h3>
-      <p>Artisam Labs ("we", "us") operates xGameFi — commerce infrastructure that lets game studios sell in-game items through Stellar-powered storefronts. This policy explains what we collect, why, and the choices you have. It covers this marketing website and the xGameFi application at <a href="https://app.xgamefi.shop" target="_blank" rel="noopener">app.xgamefi.shop</a>.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">02</span> Information we collect</h3>
-      <ul>
-        <li><strong>Studio &amp; admin accounts:</strong> username, hashed password (argon2id), and role, created when a studio is onboarded.</li>
-        <li><strong>Player data:</strong> Stellar wallet address (the player's public key, e.g. <em>G…</em>) and an optional handle. Players authenticate by signing a nonce with their wallet — no password and no email required.</li>
-        <li><strong>Studio configuration:</strong> payout wallet address, API base URL, webhook URL, and per-studio API keys (stored hashed; full key shown once).</li>
-        <li><strong>Transaction data:</strong> order, payment, payout, P2P trade, referral, and promotion records, including on-chain Stellar transaction hashes and amounts.</li>
-        <li><strong>Usage data:</strong> pages visited, browser type, IP address, and referral source, gathered via analytics cookies (see below).</li>
-        <li><strong>Cookies:</strong> small files on your device used for sessions, preferences, and analytics.</li>
-      </ul>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">03</span> How we use your information</h3>
-      <ul>
-        <li>To operate studios, storefronts, checkout, P2P trades, referrals, and promotions.</li>
-        <li>To verify payments on-chain and deliver signed webhooks to your game server.</li>
-        <li>To send payouts to studio wallets and process referral rewards.</li>
-        <li>To respond to inquiries and provide support.</li>
-        <li>To improve the product, website content, and user experience.</li>
-        <li>To fulfill legal obligations and detect or prevent fraudulent activity.</li>
-      </ul>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">04</span> Sharing your information</h3>
-      <p>We do not sell or rent personal information. We share data only with: <strong>Stellar network</strong> (payments and payouts are public on-chain by design); <strong>service providers</strong> (hosting, databases, object storage) bound by confidentiality; <strong>partner studios</strong>, who receive their own players' transaction data via signed webhooks; and <strong>legal authorities</strong> when required by law.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">05</span> Data retention</h3>
-      <p>Account and transaction records are retained for as long as needed to operate the service and meet financial/audit obligations. On-chain transaction data is permanent and outside our control. Studio API keys can be revoked at any time.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">06</span> Data security</h3>
-      <p>We apply technical and organizational safeguards — hashed passwords, httpOnly session cookies, HMAC-signed webhooks with replay windows, tenant isolation per studio, and SSRF protection on every studio-supplied URL. No method of internet transmission is completely secure.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">07</span> Cookies</h3>
-      <p>We use three types: <strong>essential</strong> (session and authentication), <strong>analytics</strong> (visitor behavior), and <strong>preference</strong> (your settings). You can manage cookies through the consent prompt on this site or through your browser controls.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">08</span> Your rights</h3>
-      <ul>
-        <li>Access, correct, or delete your data.</li>
-        <li>Withdraw consent and opt out of marketing communications.</li>
-        <li>Revoke studio API keys and rotate webhook secrets.</li>
-      </ul>
-      <p>Exercise any of these by contacting <a href="mailto:xgamefi@artisam.xyz">xgamefi@artisam.xyz</a>.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">09</span> Third-party links &amp; services</h3>
-      <p>This site and app link to third parties (e.g. Stellar, Freighter wallet, studio storefronts). We are not responsible for the privacy practices of external websites. Wallet transactions are governed by the Stellar network's own rules.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">10</span> Changes to this policy</h3>
-      <p>Updates are posted on this page with a revised date. Continued use of the site indicates acceptance of the updated policy.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">11</span> Contact us</h3>
-      <p>Email: <a href="mailto:xgamefi@artisam.xyz">xgamefi@artisam.xyz</a><br>Operator: Artisam Labs — <a href="https://artisam.xyz" target="_blank" rel="noopener">artisam.xyz</a></p>
-    </div>
-  </div>
-</section>
-
-<!-- ─────────────────────── TERMS OF USE ─────────────────────── -->
-<section class="legal-section" id="terms">
-  <span class="eyebrow">// Legal</span>
-  <h2>Terms of <em>Use</em></h2>
-  <div class="legal-meta">
-    <span>Last updated: June 30, 2026</span>
-    <span>Operator: Artisam Labs</span>
-    <span>Product: xGameFi</span>
-  </div>
-
-  <div class="legal-body">
-    <div class="legal-block">
-      <h3><span class="num">01</span> Acceptance of terms</h3>
-      <p>By accessing this website and the xGameFi application, you agree to be bound by these terms. If you do not agree, do not use the service.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">02</span> Use of the service</h3>
-      <p>You must use the service lawfully. You are prohibited from:</p>
-      <ul>
-        <li>Infringing the rights of third parties, including studios and players.</li>
-        <li>Transmitting spam, malware, or harmful content.</li>
-        <li>Attempting unauthorized access to the platform, its accounts, or API keys.</li>
-        <li>Misrepresenting your identity or affiliation with a studio.</li>
-        <li>Scraping storefront or transaction data without written consent.</li>
-        <li>Attempting to double-spend, replay, or otherwise manipulate on-chain payments.</li>
-      </ul>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">03</span> Studios, storefronts &amp; services</h3>
-      <p>xGameFi provides storefront infrastructure, checkout, P2P trading, referrals, promotions, and signed webhook delivery. Studios are responsible for the items they list, their pricing, and for granting purchased items in their own game. We may modify, suspend, or discontinue any feature at any time.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">04</span> Intellectual property</h3>
-      <p>All website and platform content (text, graphics, logos, the xGameFi mark, software) belongs to Artisam Labs or its partners. Reproduction or derivative works require prior written consent, except for personal, non-commercial use. Each studio's storefront is branded with that studio's own brand over our skeleton.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">05</span> User submissions</h3>
-      <p>By submitting content (item data, branding, listings), studios grant a non-exclusive, royalty-free license to use, display, and distribute that content in connection with operating their storefront. Studios confirm they own the content and that it does not violate third-party rights.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">06</span> Blockchain &amp; payments disclaimer</h3>
-      <p>Payments and payouts settle on the public Stellar network. Blockchain activities carry inherent risks including market volatility, network congestion, and regulatory uncertainty. xGameFi verifies payments on-chain but does not guarantee the value of any asset. Nothing here is investment advice. Studios and players are responsible for their own wallet security and keys.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">07</span> Third-party links</h3>
-      <p>External links (Stellar, Freighter, studio sites) are provided for convenience. We do not endorse or assume responsibility for third-party content or practices.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">08</span> Limitation of liability</h3>
-      <p>To the maximum extent permitted by law, Artisam Labs is not liable for indirect, incidental, or consequential damages arising from use of the website or services, including failed or delayed on-chain payments outside our control.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">09</span> Indemnification</h3>
-      <p>You agree to indemnify Artisam Labs against claims arising from your use of the service, violation of these terms, or infringement of third-party rights.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">10</span> Governing law</h3>
-      <p>These terms are governed by the applicable laws of the operator's jurisdiction. Disputes are subject to the exclusive jurisdiction of the competent courts.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">11</span> Changes to these terms</h3>
-      <p>We may update these terms at any time. Continued use of the service constitutes acceptance of revisions.</p>
-    </div>
-
-    <div class="legal-block">
-      <h3><span class="num">12</span> Contact us</h3>
-      <p>Email: <a href="mailto:xgamefi@artisam.xyz">xgamefi@artisam.xyz</a><br>Operator: Artisam Labs — <a href="https://artisam.xyz" target="_blank" rel="noopener">artisam.xyz</a></p>
-    </div>
-  </div>
-</section>
-
 <!-- ─────────────────────── FOOTER ─────────────────────── -->
 <footer>
   <div class="foot">
@@ -766,8 +236,8 @@ footer { background: var(--deep); }
       <div>
         <h5>Legal</h5>
         <ul>
-          <li><a href="#privacy"><span class="symbol">shield</span>Privacy Policy</a></li>
-          <li><a href="#terms"><span class="symbol">description</span>Terms of Use</a></li>
+          <li><a href="./privacy.html"><span class="symbol">shield</span>Privacy Policy</a></li>
+          <li><a href="./terms.html"><span class="symbol">description</span>Terms of Use</a></li>
           <li><a href="mailto:xgamefi@artisam.xyz"><span class="symbol">alternate_email</span>xgamefi@artisam.xyz</a></li>
         </ul>
       </div>
@@ -775,8 +245,8 @@ footer { background: var(--deep); }
     <div class="foot-bottom">
       <div class="copy">© 2026 Artisam Labs · xGameFi — Neon Overdrive</div>
       <div class="legal">
-        <a href="#privacy">Privacy</a>
-        <a href="#terms">Terms</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./terms.html">Terms</a>
         <a href="mailto:xgamefi@artisam.xyz">xgamefi@artisam.xyz</a>
       </div>
     </div>
@@ -788,7 +258,7 @@ footer { background: var(--deep); }
   <div class="tag"><span class="symbol" style="font-size:14px">cookie</span> // COOKIE CONSENT</div>
   <p>
     We use essential cookies to run sessions and analytics cookies to understand how the site is used.
-    See our <a href="#privacy">Privacy Policy</a>. You can manage your choices in your browser at any time.
+    See our <a href="./privacy.html">Privacy Policy</a>. You can manage your choices in your browser at any time.
   </p>
   <div class="cookie-actions">
     <button class="btn btn-ghost" id="cookieDecline">Decline</button>
