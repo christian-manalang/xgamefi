@@ -8,7 +8,8 @@ export class IdempotencyConflictError extends Error {
 }
 
 export type RedisLike = {
-  set(key: string, value: string, options?: { px?: number; nx?: boolean }): Promise<string | null>;
+  set(key: string, value: string, expiryMode: "PX", time: number, setMode: "NX"): Promise<string | null>;
+  set(key: string, value: string): Promise<string | null>;
   get(key: string): Promise<string | null>;
   del(key: string): Promise<number>;
 };
@@ -22,7 +23,7 @@ export async function withIdempotency<T>(
   const lockValue = `${Date.now()}`;
   const lockTtlMs = 30_000;
 
-  const acquired = await redis.set(lockKey, lockValue, { px: lockTtlMs, nx: true });
+  const acquired = await redis.set(lockKey, lockValue, "PX", lockTtlMs, "NX");
   if (acquired !== "OK") {
     throw new IdempotencyConflictError("idempotency key already in progress");
   }
