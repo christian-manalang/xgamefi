@@ -2,13 +2,14 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
-## Fix checkout payment verification + harden pending-order deduplication
+## Fix checkout payment verification + harden pending-order deduplication + mock webhook delivery
 
-Corrects the on-chain amount check so discounted orders advance to `PAID`, and prevents duplicate pending orders from piling up in `/dashboard`.
+Corrects the on-chain amount check so discounted orders advance to `PAID`, prevents duplicate pending orders from piling up in `/dashboard`, and ensures the bundled mock-game webhook can still deliver in staging when the stored `webhookUrl` has a stale origin.
 
 - **Payment verification:** `packages/shared/src/settlement.ts` — `verifyAndAdvanceOrder()` now expects the buyer to pay the **discounted** amount (`grossAmount - discountAmount`) rather than the full `grossAmount`. Previously, any order with a promotion would pass the QR/quote at the discounted price but fail settlement because Horizon reported an amount below the (undiscounted) minimum, leaving the dashboard stuck at `PENDING` even though payment succeeded.
 - **Checkout quote deduplication:** `apps/web/lib/checkout-queries.ts` — `createOrderQuote()` now acquires a PostgreSQL advisory transaction lock per `playerId + itemId` to serialize concurrent quote requests, and cleans up any older duplicate `PENDING` orders for the same `playerId + itemId + quantity + currency` when reusing the latest one. Promotion `usageCount` is decremented for each cleaned-up duplicate so discounts are not consumed by abandoned orders.
-- **Tests:** `packages/shared/src/settlement.test.ts` — added coverage that settlement passes the discounted amount to `verifyPayment`; `apps/web/lib/checkout-queries.test.ts` — added coverage that pre-existing duplicate pending orders are removed and the most recent order is reused.
+- **Mock webhook delivery:** `apps/worker/src/jobs/webhook-delivery.ts` — `webhookDeliveryProcessor()` now rewrites stored URLs that end in `/api/mock-game/webhook` to use the current `env.APP_BASE_URL` origin. This fixes demo orders staying at `PAID`/`PENDING` in deployments where the Gridlock studio was seeded with a localhost/internal origin but the worker needs to reach the public web service. Added detailed delivery logs (URL, response status, errors) for easier debugging.
+- **Tests:** `packages/shared/src/settlement.test.ts` — added coverage that settlement passes the discounted amount to `verifyPayment`; `apps/web/lib/checkout-queries.test.ts` — added coverage that pre-existing duplicate pending orders are removed and the most recent order is reused; `apps/worker/src/jobs/webhook-delivery.test.ts` — added coverage that stale mock-game webhook URLs are rewritten to `APP_BASE_URL`.
 
 ## Deduplicate pending checkout orders + dev login helpers
 
