@@ -2,6 +2,15 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Synchronous mock-game webhook fallback + worker delivery guard
+
+Adds a fast-path delivery for demo orders using the bundled mock-game webhook so they reach `DELIVERED` immediately in the web service, even when the background worker queue is delayed or unavailable. Also prevents the worker from re-delivering an order that is already `DELIVERED`.
+
+- **Mock-game webhook fallback:** `packages/shared/src/mock-webhook.ts` — new helper `deliverMockGameWebhook()` that detects a studio webhook URL ending in `/api/mock-game/webhook`, resolves it to the current `APP_BASE_URL`, signs the payload, and POSTs directly to the platform's mock-game endpoint. On success it creates a `WebhookDelivery` record, flips `Order.deliveryStatus` to `DELIVERED`, and publishes the SSE event.
+- **Settlement integration:** `packages/shared/src/settlement.ts` — `verifyAndAdvanceOrder()` now fires the synchronous mock-game fallback after enqueuing background jobs, so a buyer's checkout advances to `DELIVERED` without waiting for the worker.
+- **Worker guard:** `apps/worker/src/jobs/webhook-delivery.ts` — skips delivery for an order whose `deliveryStatus` is already `DELIVERED`, avoiding duplicate deliveries when the web-service fallback and worker both run.
+- **Tests:** `packages/shared/src/mock-webhook.test.ts` — covers path detection, already-delivered short-circuit, successful fallback delivery, and non-ok responses; `packages/shared/src/settlement.test.ts` updated for the extra order lookup.
+
 ## Move tsx to runtime dependencies for worker and db seed
 
 Fixes the worker service failing to start in Railway/NIXPACKS deployments because `NODE_ENV=production` causes pnpm to omit `tsx` when it is declared as a devDependency. The worker's `start` command and the db `db:seed` command both import `tsx` at runtime.
