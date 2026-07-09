@@ -39,6 +39,44 @@ export async function createOrderQuote(input: QuoteInput): Promise<QuoteResult> 
     if (item.stock != null && quantity > item.stock) throw new HttpError(400, "INSUFFICIENT_STOCK");
 
     const currency = input.currency ?? item.priceCurrency;
+
+    const existingOrder = await tx.order.findFirst({
+      where: {
+        playerId: input.playerId,
+        itemId: item.id,
+        quantity,
+        currency,
+        paymentStatus: "PENDING",
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (existingOrder) {
+      const discountedAmount = existingOrder.grossAmount.minus(existingOrder.discountAmount);
+      const asset: Asset =
+        currency === "XLM"
+          ? { code: "XLM" }
+          : { code: env.STELLAR_USD_ASSET_CODE, issuer: env.STELLAR_USD_ASSET_ISSUER };
+      const amount = toStellarAmount(discountedAmount);
+      const unsignedXdr = await buildPaymentXdr({
+        destination: env.STELLAR_RECEIVING_ACCOUNT,
+        asset,
+        amount,
+        memo: existingOrder.id,
+        source: env.STELLAR_RECEIVING_ACCOUNT,
+      });
+      return {
+        order: toOrderDto(existingOrder),
+        quote: {
+          destination: env.STELLAR_RECEIVING_ACCOUNT,
+          asset,
+          amount,
+          memo: existingOrder.id,
+          unsignedXdr,
+        },
+      };
+    }
+
     const unitPrice = item.priceAmount;
     const grossAmount = unitPrice.mul(quantity);
 

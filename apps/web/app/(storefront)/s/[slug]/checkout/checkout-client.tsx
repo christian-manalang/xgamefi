@@ -254,7 +254,9 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
   }
 
   async function submitPayment(orderId: string, txHash: string) {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    const MAX_ATTEMPTS = 10;
+    const RETRY_DELAY_MS = 3000;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       try {
         const res = await fetch("/api/v1/checkout/submit", {
           method: "POST",
@@ -265,11 +267,13 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
           body: JSON.stringify({ orderId, txHash }),
         });
         const data = (await res.json().catch(() => null)) as {
+          error?: string;
           order?: { paymentStatus?: string; deliveryStatus?: string };
-          result?: { status?: string };
+          result?: { status?: string; reason?: string };
         } | null;
         if (!res.ok) {
           console.error("checkout submit failed", res.status, data);
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
           continue;
         }
         if (data?.order) {
@@ -281,11 +285,15 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         if (data?.result?.status === "PAID" || data?.result?.status === "ALREADY") {
           return;
         }
+        if (data?.result?.status === "REJECTED" && data.result.reason !== "transaction not found") {
+          console.error("checkout submit rejected", data.result.reason);
+          return;
+        }
         // Transaction may not be visible to Horizon yet; retry after a short delay.
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
       } catch (err) {
         console.error("checkout submit error", err);
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
       }
     }
   }

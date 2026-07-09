@@ -81,6 +81,14 @@ function assetMatches(
   return op.asset_code === exp.code && op.asset_issuer === exp.issuer;
 }
 
+function isNotFoundError(err: unknown): boolean {
+  if (err instanceof Error && err.name === "NotFoundError") return true;
+  const anyErr = err as { response?: { status?: number; title?: string }; status?: number } | undefined;
+  if (anyErr?.response?.status === 404) return true;
+  if (anyErr?.status === 404) return true;
+  return false;
+}
+
 export async function verifyPayment(
   args: {
     txHash?: string;
@@ -93,7 +101,15 @@ export async function verifyPayment(
 ): Promise<VerifyResult> {
   if (!args.txHash) return { ok: false, reason: "missing txHash" };
 
-  const tx = await horizon.transactions().transaction(args.txHash).call();
+  let tx;
+  try {
+    tx = await horizon.transactions().transaction(args.txHash).call();
+  } catch (err) {
+    if (isNotFoundError(err)) {
+      return { ok: false, reason: "transaction not found" };
+    }
+    throw err;
+  }
   if (!tx.successful) return { ok: false, reason: "transaction not successful" };
   if (tx.memo !== truncateTextMemo(args.expectedMemo)) return { ok: false, reason: "memo mismatch" };
 
