@@ -2,6 +2,13 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Checkout Freighter payment fast-path submit
+
+Fixes orders stuck at "payment submitted" / `PENDING` payment status in deployments where the background stellar-watcher is slow or not keeping up. After a successful Freighter payment, the storefront now immediately calls `POST /api/v1/checkout/submit` with the transaction hash instead of passively waiting for the watcher to detect the on-chain payment.
+
+- **Checkout client:** `apps/web/app/(storefront)/s/[slug]/checkout/checkout-client.tsx` — added `submitPayment()` helper that calls `/checkout/submit` with a deterministic `Idempotency-Key` (`submit:${orderId}:${txHash}:attempt-${n}`), updates local `orderStatus` from the response, and retries up to 3 times if Horizon has not yet indexed the transaction. Called from `payWithFreighter()` right after the transaction is submitted to Horizon.
+- **Why this fixes the bug:** `verifyAndAdvanceOrder` advances `Order.paymentStatus` to `PAID`, writes the `SALE_IN` ledger entry, and enqueues `payout` + `webhook-delivery`. Previously the storefront relied entirely on the `stellar-watcher` worker polling Horizon, which could lag or fail in Railway, leaving dashboard records and the checkout UI showing pending even though the Stellar payment succeeded.
+
 ## Auth redirect on /home and Browse Shops button
 
 Redirects unauthenticated users from the home page and allows players/users to browse available published shops from the login page.
