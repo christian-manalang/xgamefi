@@ -262,7 +262,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Idempotency-Key": `submit:${orderId}:${txHash}:attempt-${attempt}`,
+            "Idempotency-Key": `submit:${orderId}:${txHash}`,
           },
           body: JSON.stringify({ orderId, txHash }),
         });
