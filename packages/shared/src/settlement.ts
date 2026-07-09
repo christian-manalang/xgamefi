@@ -3,6 +3,7 @@ import { env } from "@xgamefi/config/env";
 import { verifyPayment, type Asset } from "./stellar";
 import { getQueue } from "./queues";
 import { publishOrderEvent } from "./order-events";
+import { deliverMockGameWebhook, isMockGameWebhook } from "./mock-webhook";
 
 export type VerifyAdvanceResult =
   | { status: "PAID"; orderId: string; referralId?: string }
@@ -29,11 +30,12 @@ export async function verifyAndAdvanceOrder(args: {
         ? { code: "XLM" }
         : { code: env.STELLAR_USD_ASSET_CODE, issuer: env.STELLAR_USD_ASSET_ISSUER };
 
+    const expectedAmount = order.grossAmount.minus(order.discountAmount);
     const verify = await verifyPayment({
       txHash: args.txHash,
       expectedDestination: env.STELLAR_RECEIVING_ACCOUNT,
       expectedAsset,
-      minAmount: order.grossAmount,
+      minAmount: expectedAmount,
       expectedMemo: order.id,
     });
 
@@ -99,20 +101,52 @@ export async function verifyAndAdvanceOrder(args: {
     return { status: "PAID", orderId: order.id, referralId } as VerifyAdvanceResult;
   });
 
-  if (result.status === "PAID") {
-    await getQueue("payout").add("payout", { orderId: result.orderId }, { jobId: `payout-${result.orderId}` });
-    await getQueue("webhook-delivery").add(
-      "webhook-delivery",
-      { orderId: result.orderId },
-      { jobId: `webhook-${result.orderId}` },
-    );
-    if (result.referralId) {
+  if (result.status === "PAID" || result.status === "ALREADY") {
+    const orderId = result.orderId;
+    // If the DB transaction committed but the job enqueue failed (e.g., a Redis
+    // hiccup in staging), later retries see ALREADY and would leave the order
+    // stuck at PAID with no payout or webhook delivery. Re-enqueue idempotently
+    // when the corresponding records are still missing.
+    const [payoutExists, deliveryExists] = await Promise.all([
+      prisma.ledgerEntry.count({ where: { orderId, type: "PAYOUT_OUT" } }).then((c) => c > 0),
+      prisma.webhookDelivery.count({ where: { orderId } }).then((c) => c > 0),
+    ]);
+    if (!payoutExists) {
+      await getQueue("payout").add("payout", { orderId }, { jobId: `payout-${orderId}` });
+    }
+    if (!deliveryExists) {
+      await getQueue("webhook-delivery").add(
+        "webhook-delivery",
+        { orderId },
+        { jobId: `webhook-${orderId}` },
+      );
+    }
+    if (result.status === "PAID" && result.referralId) {
       await getQueue("referral-reward").add(
         "referral-reward",
         { referralId: result.referralId },
         { jobId: `referral-reward-${result.referralId}` },
       );
     }
+    if (!payoutExists || !deliveryExists) {
+      console.log(
+        `verifyAndAdvanceOrder: enqueuing missing jobs for order ${orderId} (payout=${payoutExists}, delivery=${deliveryExists})`,
+      );
+    }
+
+    // Fast-path for demo orders using the bundled mock-game webhook: attempt
+    // synchronous delivery in the web service so the buyer sees DELIVERED
+    // immediately even if the worker queue is delayed or unavailable.
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { studio: { select: { webhookUrl: true } } },
+    });
+    if (order?.studio?.webhookUrl && isMockGameWebhook(order.studio.webhookUrl)) {
+      void deliverMockGameWebhook(order.id).catch((err: unknown) =>
+        console.error("verifyAndAdvanceOrder: mock-game fallback failed", err),
+      );
+    }
+
     await publishOrderEvent(args.orderId, { paymentStatus: "PAID" }).catch((err) =>
       console.error(`verifyAndAdvanceOrder: failed to publish event for ${args.orderId}`, err),
     );

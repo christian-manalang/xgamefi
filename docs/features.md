@@ -2,6 +2,40 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Synchronous mock-game webhook fallback + worker delivery guard
+
+Adds a fast-path delivery for demo orders using the bundled mock-game webhook so they reach `DELIVERED` immediately in the web service, even when the background worker queue is delayed or unavailable. Also prevents the worker from re-delivering an order that is already `DELIVERED`.
+
+- **Mock-game webhook fallback:** `packages/shared/src/mock-webhook.ts` — new helper `deliverMockGameWebhook()` that detects a studio webhook URL ending in `/api/mock-game/webhook`, resolves it to the current `APP_BASE_URL`, signs the payload, and POSTs directly to the platform's mock-game endpoint. On success it creates a `WebhookDelivery` record, flips `Order.deliveryStatus` to `DELIVERED`, and publishes the SSE event.
+- **Settlement integration:** `packages/shared/src/settlement.ts` — `verifyAndAdvanceOrder()` now fires the synchronous mock-game fallback after enqueuing background jobs, so a buyer's checkout advances to `DELIVERED` without waiting for the worker.
+- **Worker guard:** `apps/worker/src/jobs/webhook-delivery.ts` — skips delivery for an order whose `deliveryStatus` is already `DELIVERED`, avoiding duplicate deliveries when the web-service fallback and worker both run.
+- **Tests:** `packages/shared/src/mock-webhook.test.ts` — covers path detection, already-delivered short-circuit, successful fallback delivery, and non-ok responses; `packages/shared/src/settlement.test.ts` updated for the extra order lookup.
+
+## Move tsx to runtime dependencies for worker and db seed
+
+Fixes the worker service failing to start in Railway/NIXPACKS deployments because `NODE_ENV=production` causes pnpm to omit `tsx` when it is declared as a devDependency. The worker's `start` command and the db `db:seed` command both import `tsx` at runtime.
+
+- **`apps/worker/package.json`** — moved `tsx` from `devDependencies` to `dependencies`.
+- **`packages/db/package.json`** — moved `tsx` from `devDependencies` to `dependencies` so seed remains runnable in production-like installs.
+- **`pnpm-lock.yaml`** — regenerated to reflect the dependency category moves.
+
+## Recover stuck PAID orders + fix checkout status display
+
+Fixes orders that reach `PAID` on staging but never transition to `DELIVERED`, and stops the checkout page from freezing on "payment submitted" after a successful Freighter payment.
+
+- **Order delivery recovery:** `packages/shared/src/settlement.ts` — `verifyAndAdvanceOrder()` now re-enqueues the `payout` and `webhook-delivery` jobs when an order is already `PAID` but the corresponding records are missing. Previously, if the first `PAID` transition committed but the job enqueue failed (e.g., Redis hiccup), retries returned `ALREADY` and left the order stuck with no payout or webhook delivery.
+- **Checkout status display:** `apps/web/app/(storefront)/s/[slug]/checkout/checkout-client.tsx` — the status label now always reflects the live `orderStatus` (payment/delivery) once it is available, instead of staying on the hardcoded "payment submitted" message.
+- **Tests:** `packages/shared/src/settlement.test.ts` — added coverage that an already-PAID order with missing records recovers its payout and webhook-delivery jobs.
+
+## Fix checkout payment verification + harden pending-order deduplication + mock webhook delivery
+
+Corrects the on-chain amount check so discounted orders advance to `PAID`, prevents duplicate pending orders from piling up in `/dashboard`, and ensures the bundled mock-game webhook can still deliver in staging when the stored `webhookUrl` has a stale origin.
+
+- **Payment verification:** `packages/shared/src/settlement.ts` — `verifyAndAdvanceOrder()` now expects the buyer to pay the **discounted** amount (`grossAmount - discountAmount`) rather than the full `grossAmount`. Previously, any order with a promotion would pass the QR/quote at the discounted price but fail settlement because Horizon reported an amount below the (undiscounted) minimum, leaving the dashboard stuck at `PENDING` even though payment succeeded.
+- **Checkout quote deduplication:** `apps/web/lib/checkout-queries.ts` — `createOrderQuote()` now acquires a PostgreSQL advisory transaction lock per `playerId + itemId` to serialize concurrent quote requests, and cleans up any older duplicate `PENDING` orders for the same `playerId + itemId + quantity + currency` when reusing the latest one. Promotion `usageCount` is decremented for each cleaned-up duplicate so discounts are not consumed by abandoned orders.
+- **Mock webhook delivery:** `apps/worker/src/jobs/webhook-delivery.ts` — `webhookDeliveryProcessor()` now rewrites stored URLs that end in `/api/mock-game/webhook` to use the current `env.APP_BASE_URL` origin. This fixes demo orders staying at `PAID`/`PENDING` in deployments where the Gridlock studio was seeded with a localhost/internal origin but the worker needs to reach the public web service. Added detailed delivery logs (URL, response status, errors) for easier debugging.
+- **Tests:** `packages/shared/src/settlement.test.ts` — added coverage that settlement passes the discounted amount to `verifyPayment`; `apps/web/lib/checkout-queries.test.ts` — added coverage that pre-existing duplicate pending orders are removed and the most recent order is reused; `apps/worker/src/jobs/webhook-delivery.test.ts` — added coverage that stale mock-game webhook URLs are rewritten to `APP_BASE_URL`.
+
 ## Deduplicate pending checkout orders + dev login helpers
 
 Stops the studio dashboard from filling with abandoned duplicate orders when a buyer reloads the checkout page, and surfaces seeded test accounts in the README and on the login page.
