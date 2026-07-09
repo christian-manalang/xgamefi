@@ -2,6 +2,14 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Recover stuck PAID orders + fix checkout status display
+
+Fixes orders that reach `PAID` on staging but never transition to `DELIVERED`, and stops the checkout page from freezing on "payment submitted" after a successful Freighter payment.
+
+- **Order delivery recovery:** `packages/shared/src/settlement.ts` — `verifyAndAdvanceOrder()` now re-enqueues the `payout` and `webhook-delivery` jobs when an order is already `PAID` but the corresponding records are missing. Previously, if the first `PAID` transition committed but the job enqueue failed (e.g., Redis hiccup), retries returned `ALREADY` and left the order stuck with no payout or webhook delivery.
+- **Checkout status display:** `apps/web/app/(storefront)/s/[slug]/checkout/checkout-client.tsx` — the status label now always reflects the live `orderStatus` (payment/delivery) once it is available, instead of staying on the hardcoded "payment submitted" message.
+- **Tests:** `packages/shared/src/settlement.test.ts` — added coverage that an already-PAID order with missing records recovers its payout and webhook-delivery jobs.
+
 ## Fix checkout payment verification + harden pending-order deduplication + mock webhook delivery
 
 Corrects the on-chain amount check so discounted orders advance to `PAID`, prevents duplicate pending orders from piling up in `/dashboard`, and ensures the bundled mock-game webhook can still deliver in staging when the stored `webhookUrl` has a stale origin.

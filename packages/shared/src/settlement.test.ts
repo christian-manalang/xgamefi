@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   orderUpdate: vi.fn(),
   orderCount: vi.fn(),
   ledgerCreate: vi.fn(),
+  ledgerEntryCount: vi.fn(),
+  webhookDeliveryCount: vi.fn(),
   referralFindFirst: vi.fn(),
   referralUpdateMany: vi.fn(),
   $transaction: vi.fn(async (fn: (tx: unknown) => unknown) =>
@@ -21,7 +23,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@xgamefi/db", async () => {
   const actual = await vi.importActual<typeof import("@xgamefi/db")>("@xgamefi/db");
-  return { ...actual, prisma: { $transaction: mocks.$transaction } };
+  return {
+    ...actual,
+    prisma: {
+      $transaction: mocks.$transaction,
+      ledgerEntry: { count: mocks.ledgerEntryCount },
+      webhookDelivery: { count: mocks.webhookDeliveryCount },
+    },
+  };
 });
 vi.mock("./stellar", () => ({ verifyPayment: mocks.verifyPayment }));
 vi.mock("./queues", () => ({ getQueue: mocks.getQueue }));
@@ -62,6 +71,8 @@ beforeEach(() => {
   mocks.orderUpdate.mockReset().mockResolvedValue(orderBase);
   mocks.orderCount.mockReset().mockResolvedValue(0);
   mocks.ledgerCreate.mockReset().mockResolvedValue({});
+  mocks.ledgerEntryCount.mockReset().mockResolvedValue(1);
+  mocks.webhookDeliveryCount.mockReset().mockResolvedValue(1);
   mocks.referralFindFirst.mockReset().mockResolvedValue(null);
   mocks.referralUpdateMany.mockReset().mockResolvedValue({ count: 0 });
 });
@@ -72,6 +83,20 @@ describe("verifyAndAdvanceOrder", () => {
     const res = await verifyAndAdvanceOrder({ orderId: "o1", txHash: "tx1" });
     expect(res.status).toBe("ALREADY");
     expect(mocks.verifyPayment).not.toHaveBeenCalled();
+    expect(mocks.add).not.toHaveBeenCalled();
+  });
+
+  it("recovers missing payout/webhook jobs for an already-PAID order", async () => {
+    mocks.orderFindUnique.mockResolvedValue({ ...orderBase, paymentStatus: "PAID" });
+    mocks.ledgerEntryCount.mockResolvedValue(0);
+    mocks.webhookDeliveryCount.mockResolvedValue(0);
+
+    const res = await verifyAndAdvanceOrder({ orderId: "o1", txHash: "tx1" });
+
+    expect(res.status).toBe("ALREADY");
+    expect(mocks.add).toHaveBeenCalledTimes(2);
+    expect(mocks.getQueue).toHaveBeenCalledWith("payout");
+    expect(mocks.getQueue).toHaveBeenCalledWith("webhook-delivery");
   });
 
   it("returns PAID and writes ledger + enqueues jobs on successful verification", async () => {
@@ -82,6 +107,8 @@ describe("verifyAndAdvanceOrder", () => {
       memo: "o1",
       asset: { code: "USDT", issuer: "GISSUER" },
     });
+    mocks.ledgerEntryCount.mockResolvedValue(0);
+    mocks.webhookDeliveryCount.mockResolvedValue(0);
 
     const res = await verifyAndAdvanceOrder({ orderId: "o1", txHash: "tx1" });
 

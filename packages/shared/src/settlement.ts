@@ -100,18 +100,36 @@ export async function verifyAndAdvanceOrder(args: {
     return { status: "PAID", orderId: order.id, referralId } as VerifyAdvanceResult;
   });
 
-  if (result.status === "PAID") {
-    await getQueue("payout").add("payout", { orderId: result.orderId }, { jobId: `payout-${result.orderId}` });
-    await getQueue("webhook-delivery").add(
-      "webhook-delivery",
-      { orderId: result.orderId },
-      { jobId: `webhook-${result.orderId}` },
-    );
-    if (result.referralId) {
+  if (result.status === "PAID" || result.status === "ALREADY") {
+    const orderId = result.orderId;
+    // If the DB transaction committed but the job enqueue failed (e.g., a Redis
+    // hiccup in staging), later retries see ALREADY and would leave the order
+    // stuck at PAID with no payout or webhook delivery. Re-enqueue idempotently
+    // when the corresponding records are still missing.
+    const [payoutExists, deliveryExists] = await Promise.all([
+      prisma.ledgerEntry.count({ where: { orderId, type: "PAYOUT_OUT" } }).then((c) => c > 0),
+      prisma.webhookDelivery.count({ where: { orderId } }).then((c) => c > 0),
+    ]);
+    if (!payoutExists) {
+      await getQueue("payout").add("payout", { orderId }, { jobId: `payout-${orderId}` });
+    }
+    if (!deliveryExists) {
+      await getQueue("webhook-delivery").add(
+        "webhook-delivery",
+        { orderId },
+        { jobId: `webhook-${orderId}` },
+      );
+    }
+    if (result.status === "PAID" && result.referralId) {
       await getQueue("referral-reward").add(
         "referral-reward",
         { referralId: result.referralId },
         { jobId: `referral-reward-${result.referralId}` },
+      );
+    }
+    if (!payoutExists || !deliveryExists) {
+      console.log(
+        `verifyAndAdvanceOrder: enqueuing missing jobs for order ${orderId} (payout=${payoutExists}, delivery=${deliveryExists})`,
       );
     }
     await publishOrderEvent(args.orderId, { paymentStatus: "PAID" }).catch((err) =>
