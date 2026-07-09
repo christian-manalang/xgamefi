@@ -92,4 +92,49 @@ describe("createOrderQuote", () => {
     const second = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1, currency: "XLM" });
     expect(second.order.id).not.toBe(first.order.id);
   });
+
+  it("cleans up older duplicate pending orders when reusing the latest one", async () => {
+    // Simulate pre-existing duplicates (e.g., from a race or before the dedup fix).
+    const older = await prisma.order.create({
+      data: {
+        studioId: STUDIO,
+        itemId: ITEM,
+        playerId: PLAYER,
+        quantity: 1,
+        currency: "USDT",
+        grossAmount: new Prisma.Decimal("1"),
+        discountAmount: new Prisma.Decimal("0"),
+        platformFeeAmount: new Prisma.Decimal("0.05"),
+        netToStudioAmount: new Prisma.Decimal("0.95"),
+        idempotencyKey: "quote:dup:1",
+        paymentStatus: "PENDING",
+        deliveryStatus: "PENDING",
+      },
+    });
+    await new Promise((r) => setTimeout(r, 10));
+    const newer = await prisma.order.create({
+      data: {
+        studioId: STUDIO,
+        itemId: ITEM,
+        playerId: PLAYER,
+        quantity: 1,
+        currency: "USDT",
+        grossAmount: new Prisma.Decimal("1"),
+        discountAmount: new Prisma.Decimal("0"),
+        platformFeeAmount: new Prisma.Decimal("0.05"),
+        netToStudioAmount: new Prisma.Decimal("0.95"),
+        idempotencyKey: "quote:dup:2",
+        paymentStatus: "PENDING",
+        deliveryStatus: "PENDING",
+      },
+    });
+
+    const result = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1, currency: "USDT" });
+    expect(result.order.id).toBe(newer.id);
+
+    const remaining = await prisma.order.findMany({ where: { playerId: PLAYER, itemId: ITEM } });
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]?.id).toBe(newer.id);
+    expect(remaining[0]?.paymentStatus).toBe("PENDING");
+  });
 });

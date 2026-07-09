@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { prisma, Prisma } from "@xgamefi/db";
 import { env } from "@xgamefi/config/env";
 import { feeAmount, netAmount, toStellarAmount } from "@xgamefi/shared/money";
@@ -14,6 +15,13 @@ export type QuoteInput = {
   referralCode?: string;
 };
 
+function advisoryLockKey(playerId: string, itemId: string): bigint {
+  // Postgres advisory xact lock keys are signed 64-bit integers.
+  // Use the first 14 hex digits (56 bits) of the SHA-256 hash so it always fits.
+  const hex = createHash("sha256").update(`${playerId}:${itemId}`).digest("hex").slice(0, 14);
+  return BigInt.asIntN(64, BigInt(parseInt(hex, 16)));
+}
+
 export type QuoteResult = {
   order: OrderDto;
   quote: {
@@ -29,6 +37,10 @@ export async function createOrderQuote(input: QuoteInput): Promise<QuoteResult> 
   const quantity = input.quantity ?? 1;
 
   return prisma.$transaction(async (tx) => {
+    // Serialize quote creation for the same player + item to prevent concurrent
+    // checkout loads from creating duplicate pending orders.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${advisoryLockKey(input.playerId, input.itemId)})`;
+
     const item = await tx.item.findUnique({ where: { id: input.itemId } });
     if (!item) throw new HttpError(404, "ITEM_NOT_FOUND");
 
@@ -52,6 +64,28 @@ export async function createOrderQuote(input: QuoteInput): Promise<QuoteResult> 
     });
 
     if (existingOrder) {
+      // Clean up duplicate pending orders created by races or before the dedup
+      // fix; keep the most recent one that the buyer is currently checking out.
+      const duplicates = await tx.order.findMany({
+        where: {
+          playerId: input.playerId,
+          itemId: item.id,
+          quantity,
+          currency,
+          paymentStatus: "PENDING",
+          id: { not: existingOrder.id },
+        },
+      });
+      for (const dup of duplicates) {
+        if (dup.promotionId) {
+          await tx.promotion.update({
+            where: { id: dup.promotionId },
+            data: { usageCount: { decrement: 1 } },
+          });
+        }
+        await tx.order.delete({ where: { id: dup.id } });
+      }
+
       const discountedAmount = existingOrder.grossAmount.minus(existingOrder.discountAmount);
       const asset: Asset =
         currency === "XLM"

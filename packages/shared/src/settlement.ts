@@ -29,11 +29,12 @@ export async function verifyAndAdvanceOrder(args: {
         ? { code: "XLM" }
         : { code: env.STELLAR_USD_ASSET_CODE, issuer: env.STELLAR_USD_ASSET_ISSUER };
 
+    const expectedAmount = order.grossAmount.minus(order.discountAmount);
     const verify = await verifyPayment({
       txHash: args.txHash,
       expectedDestination: env.STELLAR_RECEIVING_ACCOUNT,
       expectedAsset,
-      minAmount: order.grossAmount,
+      minAmount: expectedAmount,
       expectedMemo: order.id,
     });
 
