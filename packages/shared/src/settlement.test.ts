@@ -86,7 +86,8 @@ describe("verifyAndAdvanceOrder", () => {
     const res = await verifyAndAdvanceOrder({ orderId: "o1", txHash: "tx1" });
 
     expect(res.status).toBe("PAID");
-    expect(mocks.verifyPayment.mock.calls[0][0].minAmount.toFixed()).toBe("1.0000000");
+    const call = mocks.verifyPayment.mock.calls[0]?.[0] as { minAmount?: { toFixed: () => string } } | undefined;
+    expect(call?.minAmount?.toFixed()).toBe("1.0000000");
     expect(mocks.orderUpdate).toHaveBeenCalled();
     expect(mocks.ledgerCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ type: "SALE_IN" }) }),
