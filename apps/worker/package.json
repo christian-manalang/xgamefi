@@ -13,11 +13,11 @@
     "@xgamefi/db": "workspace:*",
     "@xgamefi/shared": "workspace:*",
     "bullmq": "^5.34.0",
-    "ioredis": "^5.4.0"
+    "ioredis": "^5.4.0",
+    "tsx": "^4.19.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
     "vitest": "^3.0.0"
   }
 }

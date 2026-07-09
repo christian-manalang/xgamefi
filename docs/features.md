@@ -2,6 +2,14 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Move tsx to runtime dependencies for worker and db seed
+
+Fixes the worker service failing to start in Railway/NIXPACKS deployments because `NODE_ENV=production` causes pnpm to omit `tsx` when it is declared as a devDependency. The worker's `start` command and the db `db:seed` command both import `tsx` at runtime.
+
+- **`apps/worker/package.json`** — moved `tsx` from `devDependencies` to `dependencies`.
+- **`packages/db/package.json`** — moved `tsx` from `devDependencies` to `dependencies` so seed remains runnable in production-like installs.
+- **`pnpm-lock.yaml`** — regenerated to reflect the dependency category moves.
+
 ## Recover stuck PAID orders + fix checkout status display
 
 Fixes orders that reach `PAID` on staging but never transition to `DELIVERED`, and stops the checkout page from freezing on "payment submitted" after a successful Freighter payment.
