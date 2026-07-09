@@ -76,4 +76,20 @@ describe("createOrderQuote", () => {
     const res = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 5 });
     expect(res.order.quantity).toBe(5);
   });
+
+  it("reuses an existing pending order for the same player, item, quantity, and currency", async () => {
+    const first = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1 });
+    const second = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1 });
+    expect(second.order.id).toBe(first.order.id);
+
+    const orders = await prisma.order.findMany({ where: { playerId: PLAYER, itemId: ITEM } });
+    expect(orders).toHaveLength(1);
+    expect(orders[0]?.paymentStatus).toBe("PENDING");
+  });
+
+  it("creates a new order when currency differs from an existing pending order", async () => {
+    const first = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1, currency: "USDT" });
+    const second = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1, currency: "XLM" });
+    expect(second.order.id).not.toBe(first.order.id);
+  });
 });

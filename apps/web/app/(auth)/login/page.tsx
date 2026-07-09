@@ -1,11 +1,18 @@
 import { redirect } from "next/navigation";
+import { env } from "@xgamefi/config/env";
 import { getPrincipal } from "../../../lib/auth/guards";
 import { LoginForm } from "./login-form";
+import { TestAccountsNote } from "./test-accounts-note";
 import { BrowseShops } from "../../../components/browse-shops";
 
 export default async function LoginPage() {
   const principal = await getPrincipal();
   if (principal?.kind === "user") redirect(principal.role === "ADMIN" ? "/admin" : "/dashboard");
+
+  const testAccounts = [
+    { role: "Admin", username: env.ADMIN_USERNAME, password: env.ADMIN_PASSWORD },
+    { role: "Studio owner", username: env.STUDIO_OWNER_USERNAME, password: env.STUDIO_OWNER_PASSWORD },
+  ];
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-background px-margin-mobile gap-8">
@@ -17,6 +24,7 @@ export default async function LoginPage() {
           Need a studio?{" "}
           <a href="/register" className="text-primary-fixed hover:underline">Create one</a>
         </p>
+        <TestAccountsNote accounts={testAccounts} />
       </section>
       <BrowseShops />
     </main>

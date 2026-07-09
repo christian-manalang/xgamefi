@@ -2,6 +2,15 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Deduplicate pending checkout orders + dev login helpers
+
+Stops the studio dashboard from filling with abandoned duplicate orders when a buyer reloads the checkout page, and surfaces seeded test accounts in the README and on the login page.
+
+- **Checkout quote deduplication:** `apps/web/lib/checkout-queries.ts` — `createOrderQuote()` now reuses an existing `PENDING` order for the same `playerId + itemId + quantity + currency` instead of creating a new order on every checkout page load. The existing order's locked amounts and memo are preserved; only the Stellar XDR is rebuilt so the buyer can still pay.
+- **Tests:** `apps/web/lib/checkout-queries.test.ts` — added coverage that repeated quotes return the same pending order and that a currency mismatch creates a separate order.
+- **README:** `README.md` — added a "Default test accounts (seeded locally)" table listing the admin (`admin` / `test-admin-password`) and Gridlock studio owner (`studio` / `test-studio-password`) accounts.
+- **Login page:** `apps/web/app/(auth)/login/page.tsx` + `test-accounts-note.tsx` — added a collapsible "Test accounts" panel on `/login` showing the seeded admin and studio owner credentials. `test-accounts-note.test.tsx` covers the collapsed and expanded states.
+
 ## Checkout Freighter payment fast-path submit
 
 Fixes orders stuck at "payment submitted" / `PENDING` payment status in deployments where the background stellar-watcher is slow or not keeping up. After a successful Freighter payment, the storefront now immediately calls `POST /api/v1/checkout/submit` with the transaction hash instead of passively waiting for the watcher to detect the on-chain payment.

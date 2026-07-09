@@ -351,6 +351,17 @@ pnpm --filter @xgamefi/worker dev   # queue workers
 
 Health checks: `GET /api/health` (liveness), `GET /api/ready` (DB + Redis).
 
+### Default test accounts (seeded locally)
+
+The `db:seed` command creates the following accounts for local development and demos:
+
+| Account | Username | Password |
+| --- | --- | --- |
+| Platform admin | `admin` | `test-admin-password` |
+| Gridlock studio owner | `studio` | `test-studio-password` |
+
+Use the admin account at `/admin` and the studio owner account at `/dashboard`.
+
 ### Environment variables (`.env.example`)
 
 All variables below are validated fail-fast by the Zod schema in `packages/config/src/env.ts` — the app will not boot if a **required** var is missing or malformed. There are no vars that are truly optional at runtime; a few have schema defaults.
