@@ -6,6 +6,20 @@ import { toOrderDto, toP2PTradeDto, type OrderRow } from "@xgamefi/shared/dto";
 import { getQueue } from "@xgamefi/shared/queues";
 import { publishOrderEvent } from "@xgamefi/shared/order-events";
 
+const MOCK_GAME_WEBHOOK_PATH = "/api/mock-game/webhook";
+
+function resolveWebhookUrl(storedUrl: string): string {
+  // The bundled mock game server is part of the platform itself. If its URL was
+  // seeded with a stale origin (e.g., localhost) but APP_BASE_URL now points to
+  // the real deployment, deliver to the current origin so demo orders can reach
+  // DELIVERED without manual DB fixes.
+  if (storedUrl.endsWith(MOCK_GAME_WEBHOOK_PATH)) {
+    const base = env.APP_BASE_URL.replace(/\/$/, "");
+    return `${base}${MOCK_GAME_WEBHOOK_PATH}`;
+  }
+  return storedUrl;
+}
+
 async function deliverWebhook(
   url: string,
   init: RequestInit & { timeoutMs?: number; maxBytes?: number },
@@ -50,7 +64,7 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
     const studio = trade.listing.item.studio;
     if (!studio?.webhookUrl) throw new Error(`webhook-delivery: studio ${studio?.id} has no webhookUrl`);
     studioId = studio.id;
-    webhookUrl = studio.webhookUrl;
+    webhookUrl = resolveWebhookUrl(studio.webhookUrl);
     webhookSecretHash = studio.webhookSecretHash ?? "";
     event = "p2p_trade_completed";
     payload = { event: eventName(event), trade: toP2PTradeDto(trade) };
@@ -62,7 +76,7 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
     if (order.paymentStatus !== "PAID") throw new Error(`webhook-delivery: order ${orderId} is not PAID`);
     if (!order.studio?.webhookUrl) throw new Error(`webhook-delivery: studio ${order.studioId} has no webhookUrl`);
     studioId = order.studio.id;
-    webhookUrl = order.studio.webhookUrl;
+    webhookUrl = resolveWebhookUrl(order.studio.webhookUrl);
     webhookSecretHash = order.studio.webhookSecretHash ?? "";
     event = "purchase_completed";
     payload = { event: eventName(event), order: toOrderDto(order as unknown as OrderRow) };
@@ -89,6 +103,7 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
   });
 
   let responseStatus: number | null = null;
+  console.log(`webhook-delivery: delivering ${event} to ${webhookUrl} (order=${linkOrderId ?? "-"}, trade=${linkTradeId ?? "-"})`);
   try {
     const res = await deliverWebhook(webhookUrl, {
       method: "POST",
@@ -102,6 +117,7 @@ export async function webhookDeliveryProcessor(job: { data: WebhookDeliveryJobDa
       maxBytes: 1_000_000,
     });
     responseStatus = res.status;
+    console.log(`webhook-delivery: ${event} response status ${responseStatus} (order=${linkOrderId ?? "-"}, trade=${linkTradeId ?? "-"})`);
     if (res.ok) {
       const ops: unknown[] = [
         prisma.webhookDelivery.update({
