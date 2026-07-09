@@ -253,6 +253,43 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
     }
   }
 
+  async function submitPayment(orderId: string, txHash: string) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch("/api/v1/checkout/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": `submit:${orderId}:${txHash}:attempt-${attempt}`,
+          },
+          body: JSON.stringify({ orderId, txHash }),
+        });
+        const data = (await res.json().catch(() => null)) as {
+          order?: { paymentStatus?: string; deliveryStatus?: string };
+          result?: { status?: string };
+        } | null;
+        if (!res.ok) {
+          console.error("checkout submit failed", res.status, data);
+          continue;
+        }
+        if (data?.order) {
+          setOrderStatus({
+            paymentStatus: data.order.paymentStatus ?? "PENDING",
+            deliveryStatus: data.order.deliveryStatus ?? "PENDING",
+          });
+        }
+        if (data?.result?.status === "PAID" || data?.result?.status === "ALREADY") {
+          return;
+        }
+        // Transaction may not be visible to Horizon yet; retry after a short delay.
+        await new Promise((r) => setTimeout(r, 2000));
+      } catch (err) {
+        console.error("checkout submit error", err);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
+  }
+
   async function payWithFreighter() {
     if (!quote) return;
     setStatusMessage("signing with Freighter…");
@@ -296,6 +333,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       const submitted = await server.submitTransaction(signedTx);
       setTxHash(submitted.hash);
       setStatusMessage(`payment submitted: ${submitted.hash.slice(0, 12)}…`);
+      void submitPayment(quote.order.id, submitted.hash);
     } catch (err) {
       console.error("freighter payment failed", err);
       setStatusMessage("payment failed: " + horizonErrorMessage(err));
