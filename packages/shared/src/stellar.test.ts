@@ -47,6 +47,25 @@ function horizonStub(record: {
   } as unknown as Parameters<typeof verifyPayment>[1];
 }
 
+function horizonNotFoundStub() {
+  return {
+    transactions: () => ({
+      transaction: (_h: string) => ({
+        call: async () => {
+          const err = new Error("Transaction not found");
+          err.name = "NotFoundError";
+          throw err;
+        },
+      }),
+    }),
+    operations: () => ({
+      forTransaction: (_h: string) => ({
+        call: async () => ({ records: [] }),
+      }),
+    }),
+  } as unknown as Parameters<typeof verifyPayment>[1];
+}
+
 describe("buildPaymentXdr", () => {
   // Loads the source account from Horizon (network); only run when STELLAR_E2E is set.
   it.skipIf(!process.env.STELLAR_E2E)(
@@ -119,5 +138,11 @@ describe("verifyPayment", () => {
       memo: "ord_abc", successful: false,
     }));
     expect(res.ok).toBe(false);
+  });
+
+  it("ok=false when the transaction is not found on Horizon", async () => {
+    const res = await verifyPayment(base, horizonNotFoundStub());
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("transaction not found");
   });
 });
