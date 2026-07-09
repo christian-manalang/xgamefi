@@ -29,6 +29,7 @@ vi.mock("./order-events", () => ({ publishOrderEvent: vi.fn(async () => {}) }));
 
 import { verifyAndAdvanceOrder } from "./settlement";
 
+const discountedAmount = { toFixed: () => "1.0000000" };
 const orderBase = {
   id: "o1",
   studioId: "s1",
@@ -36,7 +37,7 @@ const orderBase = {
   playerId: "p1",
   quantity: 1,
   currency: "USDT" as const,
-  grossAmount: { toFixed: () => "1.0000000" },
+  grossAmount: { toFixed: () => "1.0000000", minus: () => discountedAmount },
   discountAmount: { toFixed: () => "0" },
   platformFeeAmount: { toFixed: () => "0.0500000" },
   netToStudioAmount: { toFixed: () => "0.9500000" },
@@ -85,6 +86,7 @@ describe("verifyAndAdvanceOrder", () => {
     const res = await verifyAndAdvanceOrder({ orderId: "o1", txHash: "tx1" });
 
     expect(res.status).toBe("PAID");
+    expect(mocks.verifyPayment.mock.calls[0][0].minAmount.toFixed()).toBe("1.0000000");
     expect(mocks.orderUpdate).toHaveBeenCalled();
     expect(mocks.ledgerCreate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ type: "SALE_IN" }) }),
@@ -100,6 +102,29 @@ describe("verifyAndAdvanceOrder", () => {
     expect(res.status).toBe("REJECTED");
     expect((res as { reason?: string }).reason).toBe("memo mismatch");
     expect(mocks.orderUpdate).not.toHaveBeenCalled();
+  });
+
+  it("passes the discounted amount (gross - discount) to verifyPayment", async () => {
+    const discounted = { toFixed: () => "0.9000000" };
+    mocks.orderFindUnique.mockResolvedValue({
+      ...orderBase,
+      grossAmount: { toFixed: () => "1.0000000", minus: () => discounted },
+      discountAmount: { toFixed: () => "0.1000000" },
+    });
+    mocks.verifyPayment.mockResolvedValue({
+      ok: true,
+      txHash: "tx1",
+      amount: { equals: () => true, toFixed: () => "0.9000000" },
+      memo: "o1",
+      asset: { code: "USDT", issuer: "GISSUER" },
+    });
+
+    const res = await verifyAndAdvanceOrder({ orderId: "o1", txHash: "tx1" });
+
+    expect(res.status).toBe("PAID");
+    expect(mocks.verifyPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ minAmount: discounted }),
+    );
   });
 
   it("rejects if the order is not found", async () => {
