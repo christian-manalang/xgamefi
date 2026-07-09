@@ -348,8 +348,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
     }
   }
 
-  const isPaymentStatus = statusMessage === "pending payment" || statusMessage === "waiting for quote";
-  const displayStatus = isPaymentStatus && orderStatus
+  const displayStatus = orderStatus
     ? `${orderStatus.paymentStatus} / ${orderStatus.deliveryStatus}`
     : statusMessage;
   const delivered = orderStatus?.deliveryStatus === "DELIVERED";
