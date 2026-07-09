@@ -34,7 +34,12 @@ vi.mock("@xgamefi/db", async () => {
   };
 });
 vi.mock("@xgamefi/config/env", () => ({
-  env: { WEBHOOK_MAX_ATTEMPTS: 5, WEBHOOK_TIMESTAMP_TOLERANCE_SEC: 300 },
+  env: {
+    APP_BASE_URL: "https://app.test",
+    NODE_ENV: "test",
+    WEBHOOK_MAX_ATTEMPTS: 5,
+    WEBHOOK_TIMESTAMP_TOLERANCE_SEC: 300,
+  },
 }));
 
 import { webhookDeliveryProcessor } from "./webhook-delivery";
@@ -81,6 +86,24 @@ describe("webhookDeliveryProcessor", () => {
     expect(res.status).toBe("DELIVERED");
     expect(mocks.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ event: "p2p_trade_completed", tradeId: "t1" }) }),
+    );
+  });
+
+  it("rewrites a stale mock-game webhook URL to the current APP_BASE_URL", async () => {
+    mocks.findUnique.mockResolvedValue({
+      id: "o1",
+      studioId: "s1",
+      paymentStatus: "PAID",
+      deliveryStatus: "PENDING",
+      studio: { webhookUrl: "http://localhost:3000/api/mock-game/webhook", webhookSecretHash: "hash" },
+    });
+
+    const res = await webhookDeliveryProcessor({ data: { orderId: "o1" } });
+
+    expect(res.status).toBe("DELIVERED");
+    expect(mocks.safeFetch).toHaveBeenCalledWith(
+      "https://app.test/api/mock-game/webhook",
+      expect.anything(),
     );
   });
 });
