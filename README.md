@@ -277,8 +277,6 @@ sequenceDiagram
 
 No Soroban contract crates currently exist in this repository (no `Cargo.toml` / `contracts/` directory found). The system today settles payments as native Stellar Horizon payment operations (`@stellar/stellar-sdk`), not custom Soroban contracts. `SPEC.md` and `.env.example` reference a Soroban RPC endpoint (`STELLAR_RPC_URL`) but no contract has been added yet [inferred: reserved for future use]. See [Growth & Stellar ecosystem impact](#growth--stellar-ecosystem-impact) below for where Soroban-based escrow/settlement could plug in.
 
-<!-- PLACEHOLDER: Soroban smart contracts — document each contract's purpose, public functions, parameters, and deployment/upload process here. -->
-
 ## Growth & Stellar ecosystem impact
 
 A comprehensive report on business-viability features and Stellar-ecosystem integrations (SEPs, anchors, DEX/path payments, Soroban) worth adding next is tracked as GitHub issue **[#137](https://github.com/webnxt-2030/xgamefi/issues/137)**.
@@ -403,16 +401,12 @@ Per `railway.web.json` / `railway.worker.json` and CI, the project targets **Rai
 - Managed Postgres and Redis, plus a MinIO service or volume for object storage [inferred from `SPEC.md` §11].
 - A `staging` branch now exists in the repository alongside `main`/`develop`, consistent with active Railway deploy preparation; CI (`.github/workflows/ci.yml`) runs on push to `main`/`develop` and on pull requests but does not itself deploy — deployment is presumed to be Railway's own git-integration trigger [inferred, not confirmed in repo].
 
-Live environment:
-- **Production URL:** `[PLACEHOLDER: Live app URL]`
-- **Staging/demo URL:** `[PLACEHOLDER: Live app URL]`
-
 ## Demo
 
-- **Live app:** `[PLACEHOLDER: Live app URL]`
-- **Demo video:** `[PLACEHOLDER: Demo video URL]`
-- **Screenshot:** `[PLACEHOLDER: screenshot]`
-- **Pitch deck:** [`docs/pitch-deck.md`](./docs/pitch-deck.md) (draft slide content; see also `docs/pitch-deck-draft-xGameFi.pptx`)
+- **Live app:** [https://xgamefi.shop/](https://xgamefi.shop/)
+- **Demo video:** [Youtube Video](https://youtu.be/ri3_Afl-1Hg)
+- **Screenshot:** ![xGameFi App Screenshot](./docs/xgamefi-frontpage.png)
+- **Pitch deck:** [Google Slides Presentation](https://docs.google.com/presentation/d/1c3UaztwASZsK04oir9AKVCZZx5AfQvAa/edit?usp=sharing&ouid=101383438175467004191&rtpof=true&sd=true)
 
 The canonical demo acceptance flow (`SPEC.md` §13, automated as `apps/web/e2e/demo.spec.ts` and gated in CI): open `/s/gridlock`, scan the Sword Skin QR, pay 1 USDT on testnet via Freighter — within seconds the order goes `PAID` then `DELIVERED`, payout is sent to the Gridlock wallet, a signed `purchase.completed` webhook is delivered, and the `/orders/:id/events` SSE feed shows "payment in → item delivered."
 
@@ -420,8 +414,8 @@ The canonical demo acceptance flow (`SPEC.md` §13, automated as `apps/web/e2e/d
 
 | Name | Role | Contact |
 | --- | --- | --- |
-| `[PLACEHOLDER: name]` | `[PLACEHOLDER: role]` | `[PLACEHOLDER: contact]` |
-| `[PLACEHOLDER: name]` | `[PLACEHOLDER: role]` | `[PLACEHOLDER: contact]` |
+| Mark Hugh Neri | CTO | @kimerran |
+| Jorge Christian B. Manalang | Builder | @christian-manalang |
 
 ## License
 
