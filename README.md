@@ -414,8 +414,8 @@ The canonical demo acceptance flow (`SPEC.md` §13, automated as `apps/web/e2e/d
 
 | Name | Role | Contact |
 | --- | --- | --- |
-| Mark Hugh Neri | CTO | @kimerran |
 | Jorge Christian B. Manalang | Builder | @christian-manalang |
+| Artisam Labs | Incubator | - |
 
 ## License
 
