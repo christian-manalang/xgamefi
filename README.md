@@ -10,18 +10,18 @@ Every payment, payout, escrow, and referral reward in xGameFi is a real, verifie
 
 | | |
 | --- | --- |
-| **Version** | `0.0.0` (all workspace packages are `private: true`, unversioned — pre-release/internal) [inferred] |
-| **Stage** | **SPEC.md v1 feature-complete.** All Sprint 0–7 phases plus the post-Sprint-7 MVP gap-fill (studio dashboard overview/settings/transactions/P2P management, player purchase history, P2P sell page — [#129–#134](https://github.com/webnxt-2030/xgamefi/issues?q=is%3Aissue+129..134)) are merged to `develop`. **0 open issues.** A `staging` branch exists alongside `main`/`develop`, tracking Railway deploy prep. |
+| **Version** | `0.0.0` — all workspace packages are `private: true`, unversioned (pre-release/internal) |
+| **Stage** | **Feature-complete.** All Sprint 0–7 phases plus the post-Sprint-7 MVP gap-fill (studio dashboard overview/settings/transactions/P2P management, player purchase history, P2P sell page — [#129–#134](https://github.com/webnxt-2030/xgamefi/issues?q=is%3Aissue+129..134)) are merged to `develop`. **0 open issues.** A `staging` branch exists alongside `main`/`develop`, tracking Railway deploy prep. |
 | **CI** | Passing on `develop` — lint, typecheck, `vitest` suite, Prisma drift check, `pnpm audit`, and the headline Playwright demo e2e are all green on the latest run ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)). |
-| **License** | No `LICENSE` file found in the repository — license is unspecified [inferred]. See [License](#license). |
+| **License** | Unspecified — no `LICENSE` file in the repository. See [License](#license). |
 
 ## Problem
 
-Per [`SPEC.md`](./SPEC.md) §1: *"Every indie studio that wants to sell in-game items has to build its own payment rail, shop UI, and delivery pipeline."* That means each studio independently re-solves payment processing, storefront UI, fraud/idempotency handling, and item-delivery reliability before it can sell a single skin — a high fixed cost for teams whose core competency is making games, not commerce infrastructure.
+*"Every indie studio that wants to sell in-game items has to build its own payment rail, shop UI, and delivery pipeline."* That means each studio independently re-solves payment processing, storefront UI, fraud/idempotency handling, and item-delivery reliability before it can sell a single skin — a high fixed cost for teams whose core competency is making games, not commerce infrastructure.
 
 ## Vision / Purpose
 
-xGameFi aims to be *"the missing layer"* (SPEC.md §1): a studio connects its game's item API and gets a professional Stellar-powered storefront in minutes, with players paying via any Stellar wallet and studios settling instantly after a platform fee. The project is explicitly built around a single, concrete proof point — the **anchor partner Gridlock Games** and a live demo moment (SPEC.md §1): an audience member scans a QR code, pays 1 USDT for a "Sword Skin" with Freighter, and within seconds the payment confirms on-chain, a signed webhook fires to Gridlock's server, the skin lands in the player's inventory, and a live transaction feed shows "payment in → item delivered." That demo is codified as a CI-gate: `e2e/demo.spec.ts` runs on every push (`.github/workflows/ci.yml`), and is now fully self-contained — a bundled mock game server (`/api/mock-game/items`, `/api/mock-game/webhook`) plays the role of Gridlock's backend so the entire demo runs without any external partner infrastructure.
+xGameFi aims to be *"the missing layer"*: a studio connects its game's item API and gets a professional Stellar-powered storefront in minutes, with players paying via any Stellar wallet and studios settling instantly after a platform fee. The project is explicitly built around a single, concrete proof point — the **anchor partner Gridlock Games** and a live demo moment: an audience member scans a QR code, pays 1 USDT for a "Sword Skin" with Freighter, and within seconds the payment confirms on-chain, a signed webhook fires to Gridlock's server, the skin lands in the player's inventory, and a live transaction feed shows "payment in → item delivered." That demo is codified as a CI-gate: `e2e/demo.spec.ts` runs on every push (`.github/workflows/ci.yml`), and is now fully self-contained — a bundled mock game server (`/api/mock-game/items`, `/api/mock-game/webhook`) plays the role of Gridlock's backend so the entire demo runs without any external partner infrastructure.
 
 ## Target Users
 
@@ -186,7 +186,7 @@ sequenceDiagram
 
 ### 2. Wallet auth (Freighter challenge/sign)
 
-Derived from `apps/web/app/api/v1/auth/wallet/{challenge,verify}/route.ts` and the `WalletConnect` island (`docs/features.md` #126).
+Derived from `apps/web/app/api/v1/auth/wallet/{challenge,verify}/route.ts` and the `WalletConnect` island.
 
 ```mermaid
 sequenceDiagram
@@ -275,7 +275,7 @@ sequenceDiagram
 
 ## Smart Contracts
 
-No Soroban contract crates currently exist in this repository (no `Cargo.toml` / `contracts/` directory found). The system today settles payments as native Stellar Horizon payment operations (`@stellar/stellar-sdk`), not custom Soroban contracts. `SPEC.md` and `.env.example` reference a Soroban RPC endpoint (`STELLAR_RPC_URL`) but no contract has been added yet [inferred: reserved for future use]. See [Growth & Stellar ecosystem impact](#growth--stellar-ecosystem-impact) below for where Soroban-based escrow/settlement could plug in.
+No Soroban contract crates currently exist in this repository (no `Cargo.toml` / `contracts/` directory found). The system today settles payments as native Stellar Horizon payment operations (`@stellar/stellar-sdk`), not custom Soroban contracts. `.env.example` references a Soroban RPC endpoint (`STELLAR_RPC_URL`) but no contract has been added yet — reserved for future use. See [Growth & Stellar ecosystem impact](#growth--stellar-ecosystem-impact) below for where Soroban-based escrow/settlement could plug in.
 
 ## Growth & Stellar ecosystem impact
 
@@ -285,7 +285,7 @@ A comprehensive report on business-viability features and Stellar-ecosystem inte
 
 **Frontend** (`apps/web`)
 - Next.js `^16.2.5` (App Router, Node runtime), React `19.2.0` / React DOM `19.2.0`
-- Tailwind CSS `^4.3.0` + `@tailwindcss/postcss` (CSS-first `@theme`, per `BRAND.md`)
+- Tailwind CSS `^4.3.0` + `@tailwindcss/postcss` (CSS-first `@theme`)
 - `@dnd-kit/core ^6.3.1` (Shop Builder drag-and-drop)
 - `qrcode ^1.5.4` (checkout QR codes)
 - `@stellar/freighter-api ^5.0.0` (client-only wallet connect/signing)
@@ -319,7 +319,7 @@ A comprehensive report on business-viability features and Stellar-ecosystem inte
 
 ## How to Run Locally
 
-**Prerequisites** (from `README.md`/`package.json`/`.nvmrc`):
+**Prerequisites** (from `package.json`/`.nvmrc`):
 - Node.js 22 LTS
 - pnpm 10.x (`corepack enable && corepack prepare pnpm@10.12.1 --activate`)
 - Docker (for local Postgres 17 / Redis 7 / MinIO)
@@ -398,8 +398,8 @@ Per `railway.web.json` / `railway.worker.json` and CI, the project targets **Rai
 
 - **web** service — build: `pnpm install --frozen-lockfile && pnpm --filter @xgamefi/db prisma generate && pnpm --filter @xgamefi/web build`; pre-deploy runs `prisma migrate deploy` + `prisma generate`; start: `pnpm --filter @xgamefi/web start`; health check `/api/health`; `numReplicas: 1`, restarts `ON_FAILURE`.
 - **worker** service — build: `pnpm install --frozen-lockfile && pnpm --filter @xgamefi/db prisma generate`; start: `pnpm --filter @xgamefi/worker start`; `numReplicas: 1`, restarts `ON_FAILURE`.
-- Managed Postgres and Redis, plus a MinIO service or volume for object storage [inferred from `SPEC.md` §11].
-- A `staging` branch now exists in the repository alongside `main`/`develop`, consistent with active Railway deploy preparation; CI (`.github/workflows/ci.yml`) runs on push to `main`/`develop` and on pull requests but does not itself deploy — deployment is presumed to be Railway's own git-integration trigger [inferred, not confirmed in repo].
+- Managed Postgres and Redis, plus a MinIO service or volume for object storage.
+- A `staging` branch exists alongside `main`/`develop` for active Railway deploy preparation; CI (`.github/workflows/ci.yml`) runs on push to `main`/`develop` and on pull requests but does not itself deploy — deployment is triggered by Railway's git integration.
 
 ## Demo
 
@@ -408,7 +408,7 @@ Per `railway.web.json` / `railway.worker.json` and CI, the project targets **Rai
 - **Screenshot:** ![xGameFi App Screenshot](./docs/xgamefi-frontpage.png)
 - **Pitch deck:** [Google Slides Presentation](https://docs.google.com/presentation/d/1c3UaztwASZsK04oir9AKVCZZx5AfQvAa/edit?usp=sharing&ouid=101383438175467004191&rtpof=true&sd=true)
 
-The canonical demo acceptance flow (`SPEC.md` §13, automated as `apps/web/e2e/demo.spec.ts` and gated in CI): open `/s/gridlock`, scan the Sword Skin QR, pay 1 USDT on testnet via Freighter — within seconds the order goes `PAID` then `DELIVERED`, payout is sent to the Gridlock wallet, a signed `purchase.completed` webhook is delivered, and the `/orders/:id/events` SSE feed shows "payment in → item delivered."
+The canonical demo acceptance flow (automated as `apps/web/e2e/demo.spec.ts` and gated in CI): open `/s/gridlock`, scan the Sword Skin QR, pay 1 USDT on testnet via Freighter — within seconds the order goes `PAID` then `DELIVERED`, payout is sent to the Gridlock wallet, a signed `purchase.completed` webhook is delivered, and the `/orders/:id/events` SSE feed shows "payment in → item delivered."
 
 ## Team
 
@@ -419,8 +419,6 @@ The canonical demo acceptance flow (`SPEC.md` §13, automated as `apps/web/e2e/d
 
 ## License
 
-No `LICENSE` file is present in this repository at the time of writing, and `package.json` marks all workspace packages `"private": true`. Treat this project as **all rights reserved** until a license is explicitly added [inferred].
+No `LICENSE` file is present in this repository, and `package.json` marks all workspace packages `"private": true`. Treat this project as **all rights reserved** until a license is explicitly added.
 
 ---
-
-See [`SPEC.md`](./SPEC.md) for the full product spec, [`AGENT.md`](./AGENT.md) for engineering rules and the pinned dependency list, [`BRAND.md`](./BRAND.md) for design tokens, [`docs/features.md`](./docs/features.md) for the shipped-feature log, [`docs/migrations.md`](./docs/migrations.md) for DB conventions, and [`docs/superpowers/plans`](./docs/superpowers/plans) for phase-by-phase implementation plans.
