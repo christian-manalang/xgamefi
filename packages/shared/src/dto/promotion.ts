@@ -4,6 +4,7 @@ import { toStellarAmount } from "../money";
 export interface PromotionDto {
   id: string;
   name: string;
+  code: string | null;
   type: "PERCENT" | "FIXED" | "BUNDLE" | "FIRST_PURCHASE";
   value: string;
   currency: string | null;
@@ -19,7 +20,7 @@ export interface PromotionDto {
 }
 
 interface PromotionRow {
-  id: string; studioId: string; name: string;
+  id: string; studioId: string; name: string; code: string | null;
   type: PromotionDto["type"]; value: Prisma.Decimal; currency: string | null;
   appliesToItemIds: string[]; bundleConfig: unknown | null;
   startsAt: Date | null; endsAt: Date | null;
@@ -31,6 +32,7 @@ export function toPromotionDto(row: PromotionRow): PromotionDto {
   return {
     id: row.id,
     name: row.name,
+    code: row.code,
     type: row.type,
     value: toStellarAmount(row.value),
     currency: row.currency,

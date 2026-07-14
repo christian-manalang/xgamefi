@@ -4,6 +4,7 @@ export type PromoType = "PERCENT" | "FIXED" | "BUNDLE" | "FIRST_PURCHASE";
 
 export interface PromotionInput {
   id: string;
+  code?: string | null;
   type: PromoType;
   value: Prisma.Decimal;
   currency: string | null;
@@ -23,6 +24,7 @@ export interface ApplyPromotionArgs {
   unitPrice: Prisma.Decimal;
   now: Date;
   playerHasPaidOrder: boolean;
+  promotionCode?: string | null;
 }
 
 export interface ApplyPromotionResult {
@@ -57,11 +59,20 @@ function none(): ApplyPromotionResult {
 }
 
 export function applyPromotion(args: ApplyPromotionArgs): ApplyPromotionResult {
-  const { promotion: p, itemId, quantity, unitPrice, now, playerHasPaidOrder } = args;
+  const { promotion: p, itemId, quantity, unitPrice, now, playerHasPaidOrder, promotionCode } = args;
   const gross = unitPrice.mul(quantity);
 
   if (!isWindowOpen(p, now)) return none();
   if (p.appliesToItemIds.length > 0 && !p.appliesToItemIds.includes(itemId)) return none();
+
+  // Coupon gating:
+  // - caller supplied a code  → only promotions with a matching (case-insensitive) code apply
+  // - caller supplied no code → only code-less promotions apply (existing auto-apply behavior)
+  if (promotionCode) {
+    if (!p.code || p.code.toLowerCase() !== promotionCode.toLowerCase()) return none();
+  } else {
+    if (p.code) return none();
+  }
 
   let raw: Prisma.Decimal;
 

@@ -8,6 +8,7 @@ const initial = [
   {
     id: "p1",
     name: "Launch",
+    code: null,
     type: "PERCENT",
     value: "10.0000000",
     currency: null,

@@ -137,4 +137,52 @@ describe("applyPromotion", () => {
     });
     expect(r.discountAmount.toFixed(7)).toBe("0.3333333");
   });
+
+  describe("coupon gating", () => {
+    it("code-gated promo does NOT apply when caller provides no code", () => {
+      const r = applyPromotion({
+        promotion: base({ code: "SUMMER10", type: "PERCENT", value: D("10") }),
+        itemId: "i1", quantity: 1, unitPrice: D("1"), now: NOW, playerHasPaidOrder: false,
+      });
+      expect(r.discountAmount.toFixed(7)).toBe("0.0000000");
+      expect(r.promotionId).toBeUndefined();
+    });
+
+    it("code-gated promo applies when caller provides the matching code", () => {
+      const r = applyPromotion({
+        promotion: base({ code: "SUMMER10", type: "PERCENT", value: D("10") }),
+        itemId: "i1", quantity: 1, unitPrice: D("1"), now: NOW, playerHasPaidOrder: false,
+        promotionCode: "SUMMER10",
+      });
+      expect(r.discountAmount.toFixed(7)).toBe("0.1000000");
+      expect(r.promotionId).toBe("promo-1");
+    });
+
+    it("code matching is case-insensitive", () => {
+      const r = applyPromotion({
+        promotion: base({ code: "SUMMER10", type: "PERCENT", value: D("10") }),
+        itemId: "i1", quantity: 1, unitPrice: D("1"), now: NOW, playerHasPaidOrder: false,
+        promotionCode: "summer10",
+      });
+      expect(r.discountAmount.toFixed(7)).toBe("0.1000000");
+    });
+
+    it("code-gated promo does NOT apply when caller provides a different code", () => {
+      const r = applyPromotion({
+        promotion: base({ code: "SUMMER10", type: "PERCENT", value: D("10") }),
+        itemId: "i1", quantity: 1, unitPrice: D("1"), now: NOW, playerHasPaidOrder: false,
+        promotionCode: "WINTER20",
+      });
+      expect(r.discountAmount.toFixed(7)).toBe("0.0000000");
+    });
+
+    it("auto-apply promo (code=null) does NOT apply when caller provides a code", () => {
+      const r = applyPromotion({
+        promotion: base({ code: null, type: "PERCENT", value: D("10") }),
+        itemId: "i1", quantity: 1, unitPrice: D("1"), now: NOW, playerHasPaidOrder: false,
+        promotionCode: "ANYTHING",
+      });
+      expect(r.discountAmount.toFixed(7)).toBe("0.0000000");
+    });
+  });
 });

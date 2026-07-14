@@ -13,6 +13,7 @@ export type QuoteInput = {
   quantity?: number;
   currency?: "XLM" | "USDT";
   referralCode?: string;
+  promotionCode?: string;
 };
 
 function advisoryLockKey(playerId: string, itemId: string): bigint {
@@ -63,7 +64,17 @@ export async function createOrderQuote(input: QuoteInput): Promise<QuoteResult> 
       orderBy: { createdAt: "desc" },
     });
 
-    if (existingOrder) {
+    // If the caller supplied a promotionCode, always re-quote fresh so the code
+    // actually applies (or fails). Otherwise reuse the existing pending order.
+    if (existingOrder && input.promotionCode) {
+      if (existingOrder.promotionId) {
+        await tx.promotion.update({
+          where: { id: existingOrder.promotionId },
+          data: { usageCount: { decrement: 1 } },
+        });
+      }
+      await tx.order.delete({ where: { id: existingOrder.id } });
+    } else if (existingOrder) {
       // Clean up duplicate pending orders created by races or before the dedup
       // fix; keep the most recent one that the buyer is currently checking out.
       const duplicates = await tx.order.findMany({
@@ -132,6 +143,7 @@ export async function createOrderQuote(input: QuoteInput): Promise<QuoteResult> 
       const r = applyPromotion({
         promotion: {
           id: p.id,
+          code: p.code,
           type: p.type,
           value: p.value,
           currency: p.currency,
@@ -148,11 +160,19 @@ export async function createOrderQuote(input: QuoteInput): Promise<QuoteResult> 
         unitPrice: item.priceAmount,
         now,
         playerHasPaidOrder,
+        promotionCode: input.promotionCode ?? null,
       });
       if (r.promotionId && r.discountAmount.greaterThan(discountAmount)) {
         discountAmount = r.discountAmount;
         promotionId = r.promotionId;
       }
+    }
+
+    // If the caller explicitly supplied a promotionCode but no promo applied,
+    // surface a structured error so the UI can render "invalid / expired /
+    // exhausted code" instead of silently quoting full price.
+    if (input.promotionCode && !promotionId) {
+      throw new HttpError(400, "INVALID_PROMOTION_CODE");
     }
 
     const discountedAmount = grossAmount.minus(discountAmount);

@@ -15,7 +15,12 @@ import {
 import type { ItemDto, ShopDto } from "@xgamefi/shared/dto";
 
 type Quote = {
-  order: { id: string };
+  order: {
+    id: string;
+    grossAmount: string;
+    discountAmount: string;
+    promotionId: string | null;
+  };
   quote: {
     destination: string;
     asset: { code: string; issuer?: string };
@@ -85,6 +90,10 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
   const [sourceAddress, setSourceAddress] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
 
   useEffect(() => {
     isConnected().then((r) => setFreighterAvailable(r.isConnected)).catch(() => setFreighterAvailable(false));
@@ -100,6 +109,7 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       currency: currency ?? item.price.currency,
     };
     if (referralCode) body.referralCode = referralCode;
+    if (appliedCoupon) body.promotionCode = appliedCoupon;
 
     const connectEvents = (orderId: string) => {
       if (esRef.current) {
@@ -180,9 +190,25 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     })
-      .then((r) => r.json())
-      .then((data: Quote) => {
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) {
+          const code = (data as { error?: { code?: string } }).error?.code ?? "QUOTE_FAILED";
+          if (code === "INVALID_PROMOTION_CODE") {
+            setCouponError("invalid / expired / exhausted code");
+            setAppliedCoupon(null);
+            setStatusMessage("quote failed: invalid promotion code");
+          } else {
+            setStatusMessage(`quote failed: ${code}`);
+          }
+          return;
+        }
+        return data as Quote;
+      })
+      .then((data) => {
+        if (!data) return;
         setQuote(data);
+        setCouponError(null);
         setStatusMessage("pending payment");
         setOrderStatus({ paymentStatus: "PENDING", deliveryStatus: "PENDING" });
         setMissingTrustline(false);
@@ -215,7 +241,23 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
         esRef.current = null;
       }
     };
-  }, [item.id, item.price.currency, referralCode, currency]);
+  }, [item.id, item.price.currency, referralCode, currency, appliedCoupon]);
+
+  function applyCoupon() {
+    const trimmed = couponInput.trim();
+    if (!trimmed) return;
+    setCouponBusy(true);
+    setCouponError(null);
+    setAppliedCoupon(trimmed);
+    // Clear busy state shortly after the effect fires; the effect re-runs on appliedCoupon change.
+    setTimeout(() => setCouponBusy(false), 500);
+  }
+
+  function clearCoupon() {
+    setCouponInput("");
+    setAppliedCoupon(null);
+    setCouponError(null);
+  }
 
   async function copyUri() {
     if (!paymentUri) return;
@@ -370,6 +412,59 @@ export function CheckoutClient({ shop, item, referralCode, currency }: CheckoutC
           <p className="font-display text-[32px] text-primary-fixed">
             {formatAmount(item.price.amount)} {item.price.currency}
           </p>
+          {quote && quote.order.discountAmount !== "0.0000000" && (
+            <div className="space-y-1">
+              <p className="font-mono text-[12px] text-primary-fixed">
+                − {formatAmount(quote.order.discountAmount)} {item.price.currency} DISCOUNT
+              </p>
+              <p className="font-display text-[20px] text-on-surface">
+                YOU PAY {formatAmount(quote.quote.amount)} {item.price.currency}
+              </p>
+            </div>
+          )}
+          <div className="space-y-2">
+            <label className="font-mono uppercase tracking-[0.1em] text-[10px] text-on-surface-variant block">
+              PROMO CODE
+            </label>
+            <div className="flex gap-2">
+              <input
+                aria-label="promo code"
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value)}
+                disabled={!!appliedCoupon}
+                placeholder="enter code"
+                className="flex-1 bg-surface-container-high border-2 border-outline-variant focus:border-primary-fixed text-on-surface font-mono uppercase tracking-[0.1em] text-[12px] px-2 py-1 outline-none disabled:opacity-50"
+              />
+              {appliedCoupon ? (
+                <button
+                  type="button"
+                  onClick={clearCoupon}
+                  className="border-2 border-outline-variant px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] hover:border-primary-fixed"
+                >
+                  CLEAR
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={couponBusy || !couponInput.trim()}
+                  className="bg-primary-fixed text-on-primary-fixed px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] disabled:opacity-50"
+                >
+                  {couponBusy ? "…" : "APPLY"}
+                </button>
+              )}
+            </div>
+            {appliedCoupon && (
+              <p className="font-mono text-[10px] text-primary-fixed">
+                APPLIED: {appliedCoupon}
+              </p>
+            )}
+            {couponError && (
+              <p className="font-mono text-[10px] text-error" role="alert">
+                {couponError}
+              </p>
+            )}
+          </div>
           <p className="text-on-surface-variant">{shop.slug} store</p>
         </div>
         <div className="bg-surface-container-low border-2 border-outline-variant p-6 flex flex-col items-center">

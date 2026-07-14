@@ -16,6 +16,7 @@ let PLAYER: string;
 
 async function wipe() {
   await prisma.order.deleteMany({ where: { idempotencyKey: { startsWith: "quote:" } } });
+  await prisma.promotion.deleteMany({ where: { studioId: STUDIO } });
   await prisma.item.deleteMany({ where: { id: ITEM } });
   await prisma.studio.deleteMany({ where: { id: STUDIO } });
   await prisma.player.deleteMany({ where: { id: PLAYER } });
@@ -136,5 +137,104 @@ describe("createOrderQuote", () => {
     expect(remaining).toHaveLength(1);
     expect(remaining[0]?.id).toBe(newer.id);
     expect(remaining[0]?.paymentStatus).toBe("PENDING");
+  });
+
+  it("applies a code-gated promotion when promotionCode matches", async () => {
+    await prisma.promotion.create({
+      data: {
+        studioId: STUDIO,
+        name: "Summer",
+        code: "SUMMER10",
+        type: "PERCENT",
+        value: new Prisma.Decimal("10"),
+        appliesToItemIds: [],
+        usageCount: 0,
+        isActive: true,
+      },
+    });
+    const res = await createOrderQuote({
+      playerId: PLAYER,
+      itemId: ITEM,
+      quantity: 1,
+      promotionCode: "SUMMER10",
+    });
+    expect(res.order.discountAmount).toBe("0.1000000");
+    expect(res.order.promotionId).toBeTruthy();
+  });
+
+  it("rejects an invalid promotionCode with INVALID_PROMOTION_CODE", async () => {
+    await expectHttpError(
+      createOrderQuote({
+        playerId: PLAYER,
+        itemId: ITEM,
+        quantity: 1,
+        promotionCode: "NOTREAL",
+      }),
+      400,
+      "INVALID_PROMOTION_CODE",
+    );
+  });
+
+  it("does NOT auto-apply a code-gated promotion when no code is provided", async () => {
+    await prisma.promotion.create({
+      data: {
+        studioId: STUDIO,
+        name: "Summer",
+        code: "SUMMER10",
+        type: "PERCENT",
+        value: new Prisma.Decimal("10"),
+        appliesToItemIds: [],
+        usageCount: 0,
+        isActive: true,
+      },
+    });
+    const res = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1 });
+    expect(res.order.discountAmount).toBe("0.0000000");
+    expect(res.order.promotionId).toBeNull();
+  });
+
+  it("auto-apply (code-less) promotion still applies without a code", async () => {
+    await prisma.promotion.create({
+      data: {
+        studioId: STUDIO,
+        name: "Launch",
+        code: null,
+        type: "PERCENT",
+        value: new Prisma.Decimal("10"),
+        appliesToItemIds: [],
+        usageCount: 0,
+        isActive: true,
+      },
+    });
+    const res = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1 });
+    expect(res.order.discountAmount).toBe("0.1000000");
+    expect(res.order.promotionId).toBeTruthy();
+  });
+
+  it("re-quotes fresh when promotionCode is provided on an existing pending order", async () => {
+    const first = await createOrderQuote({ playerId: PLAYER, itemId: ITEM, quantity: 1 });
+    expect(first.order.discountAmount).toBe("0.0000000");
+
+    await prisma.promotion.create({
+      data: {
+        studioId: STUDIO,
+        name: "Summer",
+        code: "SUMMER10",
+        type: "PERCENT",
+        value: new Prisma.Decimal("10"),
+        appliesToItemIds: [],
+        usageCount: 0,
+        isActive: true,
+      },
+    });
+
+    const second = await createOrderQuote({
+      playerId: PLAYER,
+      itemId: ITEM,
+      quantity: 1,
+      promotionCode: "SUMMER10",
+    });
+    expect(second.order.id).not.toBe(first.order.id);
+    expect(second.order.discountAmount).toBe("0.1000000");
   });
 });

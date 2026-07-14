@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 const decimalString = z.string().regex(/^\d+(\.\d{1,7})?$/, "must be a decimal with <=7dp");
+const promoCode = z
+  .string()
+  .min(3)
+  .max(32)
+  .regex(/^[A-Za-z0-9_-]+$/, "letters, numbers, dashes, underscores only");
 
 export const BundleConfigSchema = z.object({
   itemId: z.string().uuid(),
@@ -10,6 +15,7 @@ export const BundleConfigSchema = z.object({
 
 export const CreatePromotionInput = z.object({
   name: z.string().min(1).max(120),
+  code: promoCode.nullable().optional(),
   type: z.enum(["PERCENT", "FIXED", "BUNDLE", "FIRST_PURCHASE"]),
   value: decimalString,
   currency: z.enum(["XLM", "USDT"]).nullable().optional(),
@@ -30,6 +36,7 @@ export const CreatePromotionInput = z.object({
 
 export const UpdatePromotionInput = z.object({
   name: z.string().min(1).max(120).optional(),
+  code: promoCode.nullable().optional(),
   value: decimalString.optional(),
   currency: z.enum(["XLM", "USDT"]).nullable().optional(),
   appliesToItemIds: z.array(z.string().uuid()).optional(),
