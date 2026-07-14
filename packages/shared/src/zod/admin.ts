@@ -49,6 +49,12 @@ export const StudioPatchInput = z
     brand: z.record(z.any()).nullable().optional(),
     payoutWalletAddress: stellarAddress.nullable().optional(),
     platformFeeBps: z.number().int().min(0).max(10000).optional(),
+    referralRewardAmount: z
+      .string()
+      .regex(/^\d+(\.\d{1,7})?$/)
+      .nullable()
+      .optional(),
+    referralRewardCurrency: z.enum(["XLM", "USDT"]).nullable().optional(),
     integrationMode: z.enum(["API_PULL", "WEBHOOK_PUSH"]).nullable().optional(),
     apiBaseUrl: z.string().url().nullable().optional(),
     status: z.enum(["ACTIVE", "SUSPENDED", "PENDING"]).optional(),

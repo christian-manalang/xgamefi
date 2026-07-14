@@ -18,6 +18,8 @@ const baseStudio: AdminStudioDto = {
   integrationMode: "API_PULL",
   webhookUrl: "https://example.com/webhook",
   apiBaseUrl: "https://example.com/api",
+  referralRewardAmount: null,
+  referralRewardCurrency: null,
   createdAt: new Date(0).toISOString(),
 };
 
