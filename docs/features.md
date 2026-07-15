@@ -2,6 +2,17 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Player-facing promotion coupon codes (#165)
+
+Studios can now attach an optional `code` to a promotion. Code-gated promos only apply when the player types the code at checkout; code-less promos continue to auto-apply as before.
+
+- **Schema:** `packages/db/prisma/schema.prisma` — added nullable `Promotion.code String?` with `@@unique([studioId, code])`; migration `20260714051000_promotion_coupon_code`.
+- **Matching:** `packages/shared/src/promotions/applyPromotion.ts` — new `promotionCode` arg. Caller supplies a code → only promotions with a matching (case-insensitive) code apply. Caller supplies no code → only code-less promotions apply (preserves existing auto-apply behavior).
+- **API:** `POST /api/v1/checkout/quote` accepts optional `promotionCode` in `CheckoutQuoteInput` (`packages/shared/src/zod/checkout.ts`); `createOrderQuote` (`apps/web/lib/checkout-queries.ts`) passes it through to `applyPromotion` and throws `INVALID_PROMOTION_CODE` when a code is supplied but no promo matches. When `promotionCode` is provided, an existing pending order is discarded and re-quoted fresh so the code actually takes effect. `CreatePromotionInput` / `UpdatePromotionInput` (`packages/shared/src/zod/promotion.ts`) accept `code` (3–32 chars, letters/digits/dash/underscore).
+- **DTO:** `toPromotionDto` (`packages/shared/src/dto/promotion.ts`) exposes `code`.
+- **Studio UI:** `apps/web/app/(studio)/dashboard/promotions/PromotionsManager.tsx` — new "CODE (optional)" input next to name; the list shows a code badge (or "auto" for code-less). Empty code = auto-apply (existing behavior).
+- **Player UI:** `apps/web/app/(storefront)/s/[slug]/checkout/checkout-client.tsx` — promo-code input + APPLY/CLEAR buttons in the item panel; on apply, the quote refetches with the code. On success, the discount amount and "YOU PAY" total render. On `INVALID_PROMOTION_CODE`, an error message renders inline.
+- **Tests:** `packages/shared/src/promotions/applyPromotion.test.ts` — 5 new coupon-gating cases (no code / matching code / case-insensitive / wrong code / auto-apply unaffected). `apps/web/lib/checkout-queries.test.ts` — 5 new integration cases (code applies, invalid code rejects, no code skips code-gated promo, code-less promo still auto-applies, re-quote on existing pending order). `PromotionsManager.test.tsx` and `promotion.test.ts` updated for the new `code` field.
 ## Studio-configurable referral reward (#164)
 
 Studios can now set (or disable) their own referral reward from `/dashboard/settings` instead of relying on the platform-wide `REFERRAL_REWARD_AMOUNT` / `REFERRAL_REWARD_CURRENCY` env vars.

@@ -44,6 +44,33 @@ describe("POST /studios/:id/promotions", () => {
     expect(row?.studioId).toBe(studioId);
   });
 
+  it("stores the coupon code uppercased", async () => {
+    const req = new Request("http://t/api/v1/studios/x/promotions", {
+      method: "POST",
+      body: JSON.stringify({ name: "Coded", code: "save20", type: "PERCENT", value: "20" }),
+    });
+    const res = await POST(req, { params: Promise.resolve({ id: studioId }) });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.promotion.code).toBe("SAVE20");
+  });
+
+  it("409s when the code already exists for the studio (any case)", async () => {
+    const first = new Request("http://t/api/v1/studios/x/promotions", {
+      method: "POST",
+      body: JSON.stringify({ name: "A", code: "SAVE20", type: "PERCENT", value: "20" }),
+    });
+    await POST(first, { params: Promise.resolve({ id: studioId }) });
+    const second = new Request("http://t/api/v1/studios/x/promotions", {
+      method: "POST",
+      body: JSON.stringify({ name: "B", code: "save20", type: "PERCENT", value: "10" }),
+    });
+    const res = await POST(second, { params: Promise.resolve({ id: studioId }) });
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error.code).toBe("PROMOTION_CODE_TAKEN");
+  });
+
   it("rejects BUNDLE without bundleConfig (422)", async () => {
     const req = new Request("http://t/api/v1/studios/x/promotions", {
       method: "POST",
