@@ -38,23 +38,34 @@ export async function POST(
     return Response.json({ error: "invalid input", issues: parsed.error.issues }, { status: 422 });
   }
 
-  const { name, type, value, currency, appliesToItemIds, bundleConfig, startsAt, endsAt, usageLimit, isActive } = parsed.data;
+  const { name, code, type, value, currency, appliesToItemIds, bundleConfig, startsAt, endsAt, usageLimit, isActive } = parsed.data;
 
-  const row = await prisma.promotion.create({
-    data: {
-      studioId,
-      name,
-      type,
-      value: new Prisma.Decimal(value),
-      currency: currency ?? null,
-      appliesToItemIds,
-      bundleConfig: bundleConfig as Prisma.InputJsonValue ?? null,
-      startsAt: startsAt ? new Date(startsAt) : null,
-      endsAt: endsAt ? new Date(endsAt) : null,
-      usageLimit: usageLimit ?? null,
-      isActive,
-    },
-  });
+  let row;
+  try {
+    row = await prisma.promotion.create({
+      data: {
+        studioId,
+        name,
+        // Store codes uppercase so the case-sensitive unique index agrees
+        // with the case-insensitive match at checkout.
+        code: code ? code.toUpperCase() : null,
+        type,
+        value: new Prisma.Decimal(value),
+        currency: currency ?? null,
+        appliesToItemIds,
+        bundleConfig: bundleConfig as Prisma.InputJsonValue ?? null,
+        startsAt: startsAt ? new Date(startsAt) : null,
+        endsAt: endsAt ? new Date(endsAt) : null,
+        usageLimit: usageLimit ?? null,
+        isActive,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return Response.json({ error: { code: "PROMOTION_CODE_TAKEN", message: "a promotion with this code already exists" } }, { status: 409 });
+    }
+    throw err;
+  }
 
   return Response.json({ promotion: toPromotionDto(row) }, { status: 201 });
 }

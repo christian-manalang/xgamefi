@@ -19,6 +19,7 @@ export function PromotionsManager({ studioId, initial }: { studioId: string; ini
   const [type, setType] = useState("PERCENT");
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function create() {
     setError(null);
@@ -36,6 +37,33 @@ export function PromotionsManager({ studioId, initial }: { studioId: string; ini
       setValue("");
     } else {
       setError(json.error?.message ?? json.error?.code ?? "create failed");
+    }
+  }
+
+  async function toggleActive(promo: PromotionDto) {
+    setError(null);
+    const res = await fetch(`/api/v1/studios/${studioId}/promotions/${promo.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ isActive: !promo.isActive }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setPromos((p) => p.map((x) => (x.id === promo.id ? json.promotion : x)));
+    } else {
+      setError(json.error?.message ?? json.error?.code ?? "update failed");
+    }
+  }
+
+  async function remove(promo: PromotionDto) {
+    setError(null);
+    const res = await fetch(`/api/v1/studios/${studioId}/promotions/${promo.id}`, { method: "DELETE" });
+    if (res.ok) {
+      setPromos((p) => p.filter((x) => x.id !== promo.id));
+      setConfirmDeleteId(null);
+    } else {
+      const json = await res.json().catch(() => ({}));
+      setError(json.error?.message ?? json.error?.code ?? "delete failed");
     }
   }
 
@@ -74,7 +102,10 @@ export function PromotionsManager({ studioId, initial }: { studioId: string; ini
       </div>
       <ul className="space-y-2">
         {promos.map((p) => (
-          <li key={p.id} className="bg-surface-container-low border-2 border-outline-variant p-3 flex justify-between">
+          <li
+            key={p.id}
+            className={`bg-surface-container-low border-2 border-outline-variant p-3 flex items-center justify-between gap-3 ${p.isActive ? "" : "opacity-50"}`}
+          >
             <span className="text-on-surface">{p.name}</span>
             {p.code ? (
               <span className="font-mono text-xs uppercase text-primary-fixed border-2 border-primary-fixed px-2 py-0.5">
@@ -85,6 +116,42 @@ export function PromotionsManager({ studioId, initial }: { studioId: string; ini
             )}
             <span className="font-mono text-xs uppercase text-tertiary-fixed-dim">{p.type}</span>
             <span className="text-primary-fixed font-mono">{p.value}</span>
+            <span className="font-mono text-[10px] uppercase text-outline">used {p.usageCount}</span>
+            <span className="flex gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={() => toggleActive(p)}
+                className="border-2 border-outline-variant px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] text-on-surface hover:border-primary-fixed"
+              >
+                {p.isActive ? "PAUSE" : "ACTIVATE"}
+              </button>
+              {confirmDeleteId === p.id ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => remove(p)}
+                    className="border-2 border-error px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] text-error"
+                  >
+                    CONFIRM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="border-2 border-outline-variant px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] text-on-surface hover:border-primary-fixed"
+                  >
+                    CANCEL
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(p.id)}
+                  className="border-2 border-outline-variant px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] text-error hover:border-error"
+                >
+                  DELETE
+                </button>
+              )}
+            </span>
           </li>
         ))}
       </ul>

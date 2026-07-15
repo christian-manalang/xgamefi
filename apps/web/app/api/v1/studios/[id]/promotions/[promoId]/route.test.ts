@@ -47,6 +47,21 @@ describe("PATCH/DELETE /studios/:id/promotions/:promoId", () => {
     expect(body.promotion.isActive).toBe(false);
   });
 
+  it("updates the coupon code, stored uppercased", async () => {
+    const req = new Request("http://t", { method: "PATCH", body: JSON.stringify({ code: "vip10" }) });
+    const res = await PATCH(req, { params: Promise.resolve({ id: studioId, promoId }) });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.promotion.code).toBe("VIP10");
+  });
+
+  it("409s when patching to a code that already exists for the studio", async () => {
+    await prisma.promotion.create({ data: { studioId, name: "Other", code: "TAKEN", type: "PERCENT", value: new Prisma.Decimal("5"), appliesToItemIds: [], usageCount: 0, isActive: true } });
+    const req = new Request("http://t", { method: "PATCH", body: JSON.stringify({ code: "taken" }) });
+    const res = await PATCH(req, { params: Promise.resolve({ id: studioId, promoId }) });
+    expect(res.status).toBe(409);
+  });
+
   it("404s when promotion belongs to another studio", async () => {
     const req = new Request("http://t", { method: "PATCH", body: JSON.stringify({ isActive: false }) });
     const res = await PATCH(req, { params: Promise.resolve({ id: otherStudioId, promoId }) });
