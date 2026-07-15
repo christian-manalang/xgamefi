@@ -2,6 +2,16 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Studio-configurable referral reward (#164)
+
+Studios can now set (or disable) their own referral reward from `/dashboard/settings` instead of relying on the platform-wide `REFERRAL_REWARD_AMOUNT` / `REFERRAL_REWARD_CURRENCY` env vars.
+
+- **Schema:** `packages/db/prisma/schema.prisma` — added nullable `Studio.referralRewardAmount Decimal(38,7)` and `Studio.referralRewardCurrency Currency?` fields; migration `20260714050601_studio_referral_reward_config`.
+- **API:** `PATCH /api/v1/studios/:id` (`apps/web/app/api/v1/studios/[id]/route.ts`) accepts `referralRewardAmount` (string, 7-dp regex) and `referralRewardCurrency` (`XLM` | `USDT`). Null is preserved (rather than stripped) for these two fields so a studio can reset to the env fallback. Zod schema updated in `packages/shared/src/zod/admin.ts`; DTO exposure in `packages/shared/src/dto/admin.ts` (`toAdminStudioDto`).
+- **Worker:** `apps/worker/src/jobs/referral-reward/processor.ts` — looks up the studio row. Studio reward overrides env when set; `null` falls back to env; `0` explicitly disables payout (referral still flips to `REWARDED` with `rewardAmount=0`, no ledger entry).
+- **UI:** `apps/web/app/(studio)/dashboard/settings/_components/studio-settings-client.tsx` — new "REFERRAL REWARD" section with amount + currency inputs and a one-click "DISABLE REWARDS" button. Existing "SAVE SETTINGS" payload also carries the new fields.
+- **Tests:** `apps/worker/src/jobs/referral-reward/processor.test.ts` — added cases for studio override winning over env, disabled (amount=0) skipping payout, and null falling back to env. `apps/web/app/(studio)/dashboard/settings/_components/__tests__/studio-settings-client.test.tsx` — extended base studio fixture with the new DTO fields.
+
 ## Synchronous mock-game webhook fallback + worker delivery guard
 
 Adds a fast-path delivery for demo orders using the bundled mock-game webhook so they reach `DELIVERED` immediately in the web service, even when the background worker queue is delayed or unavailable. Also prevents the worker from re-delivering an order that is already `DELIVERED`.

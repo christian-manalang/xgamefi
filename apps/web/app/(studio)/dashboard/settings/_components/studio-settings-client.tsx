@@ -58,6 +58,8 @@ export function StudioSettingsClient({
       payoutWalletAddress: form.payoutWalletAddress,
       integrationMode: form.integrationMode,
       apiBaseUrl: form.apiBaseUrl,
+      referralRewardAmount: form.referralRewardAmount,
+      referralRewardCurrency: form.referralRewardCurrency,
     };
 
     const webhookPatch = { url: form.webhookUrl };
@@ -350,6 +352,88 @@ export function StudioSettingsClient({
           </button>
         </div>
       </form>
+
+      <div className="space-y-6 max-w-2xl">
+        <h2 className={labelClass}>REFERRAL REWARD</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setMessage(null);
+            const res = await fetch(`/api/v1/studios/${studio.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                referralRewardAmount: form.referralRewardAmount,
+                referralRewardCurrency: form.referralRewardCurrency,
+              }),
+            });
+            const json = await res.json().catch(() => ({}));
+            setBusy(false);
+            if (res.ok && json.data) {
+              setStudio(json.data);
+              setForm(json.data);
+              setMessage("referral reward saved");
+            } else {
+              setMessage(json.error?.message ?? "failed");
+            }
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>AMOUNT</label>
+              <input
+                value={form.referralRewardAmount ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, referralRewardAmount: e.target.value || null })
+                }
+                placeholder="leave blank = platform default"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>CURRENCY</label>
+              <select
+                value={form.referralRewardCurrency ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    referralRewardCurrency: (e.target.value || null) as "XLM" | "USDT" | null,
+                  })
+                }
+                className={inputClass}
+              >
+                <option value="">(platform default)</option>
+                <option value="XLM">XLM</option>
+                <option value="USDT">USDT</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={() =>
+                  setForm({
+                    ...form,
+                    referralRewardAmount: "0",
+                    referralRewardCurrency: form.referralRewardCurrency ?? "XLM",
+                  })
+                }
+                className={buttonSecondaryClass}
+              >
+                DISABLE REWARDS
+              </button>
+            </div>
+          </div>
+          <p className="font-mono text-[10px] tracking-[0.05em] text-on-surface-variant">
+            Paid to the referrer when their invitee completes their first purchase. Blank = use platform
+            default. Set amount to 0 to disable referral payouts for your studio.
+          </p>
+          <button type="submit" disabled={busy} className={buttonPrimaryClass}>
+            {busy ? "SAVING..." : "SAVE REFERRAL REWARD"}
+          </button>
+        </form>
+      </div>
 
       <div className="space-y-4">
         <h2 className={labelClass}>API KEYS</h2>

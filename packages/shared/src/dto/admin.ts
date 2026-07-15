@@ -170,6 +170,8 @@ export type AdminStudioDto = {
   integrationMode: string;
   webhookUrl: string | null;
   apiBaseUrl: string | null;
+  referralRewardAmount: string | null;
+  referralRewardCurrency: "XLM" | "USDT" | null;
   createdAt: string;
 };
 
@@ -186,6 +188,8 @@ export function toAdminStudioDto(row: {
   integrationMode: string;
   webhookUrl: string | null;
   apiBaseUrl: string | null;
+  referralRewardAmount: { toString(): string } | null;
+  referralRewardCurrency: "XLM" | "USDT" | null;
   createdAt: Date;
 }): AdminStudioDto {
   return {
@@ -201,6 +205,8 @@ export function toAdminStudioDto(row: {
     integrationMode: row.integrationMode,
     webhookUrl: row.webhookUrl,
     apiBaseUrl: row.apiBaseUrl,
+    referralRewardAmount: row.referralRewardAmount ? row.referralRewardAmount.toString() : null,
+    referralRewardCurrency: row.referralRewardCurrency,
     createdAt: row.createdAt.toISOString(),
   };
 }

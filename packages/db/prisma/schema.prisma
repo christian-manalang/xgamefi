@@ -181,6 +181,8 @@ model Studio {
   webhookUrl           String?
   webhookSecretHash    String?
   platformFeeBps       Int
+  referralRewardAmount   Decimal?  @db.Decimal(38, 7)
+  referralRewardCurrency Currency?
   status               StudioStatus    @default(PENDING)
   users                User[]
   apiKeys              ApiKey[]
