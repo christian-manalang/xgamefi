@@ -2,6 +2,27 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Player-facing promotion coupon codes (#165)
+
+Studios can now attach an optional `code` to a promotion. Code-gated promos only apply when the player types the code at checkout; code-less promos continue to auto-apply as before.
+
+- **Schema:** `packages/db/prisma/schema.prisma` — added nullable `Promotion.code String?` with `@@unique([studioId, code])`; migration `20260714051000_promotion_coupon_code`.
+- **Matching:** `packages/shared/src/promotions/applyPromotion.ts` — new `promotionCode` arg. Caller supplies a code → only promotions with a matching (case-insensitive) code apply. Caller supplies no code → only code-less promotions apply (preserves existing auto-apply behavior).
+- **API:** `POST /api/v1/checkout/quote` accepts optional `promotionCode` in `CheckoutQuoteInput` (`packages/shared/src/zod/checkout.ts`); `createOrderQuote` (`apps/web/lib/checkout-queries.ts`) passes it through to `applyPromotion` and throws `INVALID_PROMOTION_CODE` when a code is supplied but no promo matches. When `promotionCode` is provided, an existing pending order is discarded and re-quoted fresh so the code actually takes effect. `CreatePromotionInput` / `UpdatePromotionInput` (`packages/shared/src/zod/promotion.ts`) accept `code` (3–32 chars, letters/digits/dash/underscore).
+- **DTO:** `toPromotionDto` (`packages/shared/src/dto/promotion.ts`) exposes `code`.
+- **Studio UI:** `apps/web/app/(studio)/dashboard/promotions/PromotionsManager.tsx` — new "CODE (optional)" input next to name; the list shows a code badge (or "auto" for code-less). Empty code = auto-apply (existing behavior).
+- **Player UI:** `apps/web/app/(storefront)/s/[slug]/checkout/checkout-client.tsx` — promo-code input + APPLY/CLEAR buttons in the item panel; on apply, the quote refetches with the code. On success, the discount amount and "YOU PAY" total render. On `INVALID_PROMOTION_CODE`, an error message renders inline.
+- **Tests:** `packages/shared/src/promotions/applyPromotion.test.ts` — 5 new coupon-gating cases (no code / matching code / case-insensitive / wrong code / auto-apply unaffected). `apps/web/lib/checkout-queries.test.ts` — 5 new integration cases (code applies, invalid code rejects, no code skips code-gated promo, code-less promo still auto-applies, re-quote on existing pending order). `PromotionsManager.test.tsx` and `promotion.test.ts` updated for the new `code` field.
+## Studio-configurable referral reward (#164)
+
+Studios can now set (or disable) their own referral reward from `/dashboard/settings` instead of relying on the platform-wide `REFERRAL_REWARD_AMOUNT` / `REFERRAL_REWARD_CURRENCY` env vars.
+
+- **Schema:** `packages/db/prisma/schema.prisma` — added nullable `Studio.referralRewardAmount Decimal(38,7)` and `Studio.referralRewardCurrency Currency?` fields; migration `20260714050601_studio_referral_reward_config`.
+- **API:** `PATCH /api/v1/studios/:id` (`apps/web/app/api/v1/studios/[id]/route.ts`) accepts `referralRewardAmount` (string, 7-dp regex) and `referralRewardCurrency` (`XLM` | `USDT`). Null is preserved (rather than stripped) for these two fields so a studio can reset to the env fallback. Zod schema updated in `packages/shared/src/zod/admin.ts`; DTO exposure in `packages/shared/src/dto/admin.ts` (`toAdminStudioDto`).
+- **Worker:** `apps/worker/src/jobs/referral-reward/processor.ts` — looks up the studio row. Studio reward overrides env when set; `null` falls back to env; `0` explicitly disables payout (referral still flips to `REWARDED` with `rewardAmount=0`, no ledger entry).
+- **UI:** `apps/web/app/(studio)/dashboard/settings/_components/studio-settings-client.tsx` — new "REFERRAL REWARD" section with amount + currency inputs and a one-click "DISABLE REWARDS" button. Existing "SAVE SETTINGS" payload also carries the new fields.
+- **Tests:** `apps/worker/src/jobs/referral-reward/processor.test.ts` — added cases for studio override winning over env, disabled (amount=0) skipping payout, and null falling back to env. `apps/web/app/(studio)/dashboard/settings/_components/__tests__/studio-settings-client.test.tsx` — extended base studio fixture with the new DTO fields.
+
 ## Synchronous mock-game webhook fallback + worker delivery guard
 
 Adds a fast-path delivery for demo orders using the bundled mock-game webhook so they reach `DELIVERED` immediately in the web service, even when the background worker queue is delayed or unavailable. Also prevents the worker from re-delivering an order that is already `DELIVERED`.

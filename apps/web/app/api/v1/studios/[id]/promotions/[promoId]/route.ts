@@ -26,6 +26,7 @@ export async function PATCH(
   const data: Prisma.PromotionUpdateInput = {};
   const v = parsed.data;
   if (v.name !== undefined) data.name = v.name;
+  if (v.code !== undefined) data.code = v.code ? v.code.toUpperCase() : null;
   if (v.value !== undefined) data.value = new Prisma.Decimal(v.value);
   if (v.currency !== undefined) data.currency = v.currency;
   if (v.appliesToItemIds !== undefined) data.appliesToItemIds = v.appliesToItemIds;
@@ -35,7 +36,15 @@ export async function PATCH(
   if (v.usageLimit !== undefined) data.usageLimit = v.usageLimit;
   if (v.isActive !== undefined) data.isActive = v.isActive;
 
-  const updated = await prisma.promotion.update({ where: { id: promoId }, data });
+  let updated;
+  try {
+    updated = await prisma.promotion.update({ where: { id: promoId }, data });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return Response.json({ error: { code: "PROMOTION_CODE_TAKEN", message: "a promotion with this code already exists" } }, { status: 409 });
+    }
+    throw err;
+  }
   return Response.json({ promotion: toPromotionDto(updated) }, { status: 200 });
 }
 

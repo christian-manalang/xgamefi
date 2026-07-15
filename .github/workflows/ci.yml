@@ -75,7 +75,11 @@ jobs:
         run: pnpm --filter @xgamefi/db db:diff
 
       - name: Audit (fail on high/critical)
-        run: pnpm audit --audit-level high
+        # --ignore-registry-errors: npm retired the legacy /-/npm/v1/security/audits
+        # endpoint (returns 410). pnpm < 11 has no replacement yet, so treat
+        # registry errors as advisory instead of failing CI. Real advisories
+        # (non-registry-error responses) still fail the step on high/critical.
+        run: pnpm audit --audit-level high --ignore-registry-errors
 
       - name: Seed demo data (CI only)
         run: pnpm --filter @xgamefi/db db:seed

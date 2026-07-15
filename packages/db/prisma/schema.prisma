@@ -181,6 +181,8 @@ model Studio {
   webhookUrl           String?
   webhookSecretHash    String?
   platformFeeBps       Int
+  referralRewardAmount   Decimal?  @db.Decimal(38, 7)
+  referralRewardCurrency Currency?
   status               StudioStatus    @default(PENDING)
   users                User[]
   apiKeys              ApiKey[]
@@ -376,6 +378,7 @@ model Promotion {
   studioId         String        @db.Uuid
   studio           Studio        @relation(fields: [studioId], references: [id])
   name             String
+  code             String?
   type             PromotionType
   value            Decimal       @db.Decimal(38, 7)
   currency         Currency?
@@ -390,6 +393,7 @@ model Promotion {
   updatedAt        DateTime      @updatedAt
 
   @@index([studioId])
+  @@unique([studioId, code])
 }
 
 model WebhookDelivery {

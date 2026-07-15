@@ -4,6 +4,7 @@ import { useState } from "react";
 interface PromotionDto {
   id: string;
   name: string;
+  code: string | null;
   type: string;
   value: string;
   currency: string | null;
@@ -14,29 +15,73 @@ interface PromotionDto {
 export function PromotionsManager({ studioId, initial }: { studioId: string; initial: PromotionDto[] }) {
   const [promos, setPromos] = useState<PromotionDto[]>(initial);
   const [name, setName] = useState("");
+  const [code, setCode] = useState("");
   const [type, setType] = useState("PERCENT");
   const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function create() {
+    setError(null);
     const res = await fetch(`/api/v1/studios/${studioId}/promotions`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, type, value }),
+      body: JSON.stringify({ name, code: code.trim() || null, type, value }),
     });
+    const json = await res.json().catch(() => ({}));
     if (res.ok) {
-      const { promotion } = await res.json();
+      const { promotion } = json;
       setPromos((p) => [promotion, ...p]);
       setName("");
+      setCode("");
       setValue("");
+    } else {
+      setError(json.error?.message ?? json.error?.code ?? "create failed");
+    }
+  }
+
+  async function toggleActive(promo: PromotionDto) {
+    setError(null);
+    const res = await fetch(`/api/v1/studios/${studioId}/promotions/${promo.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ isActive: !promo.isActive }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setPromos((p) => p.map((x) => (x.id === promo.id ? json.promotion : x)));
+    } else {
+      setError(json.error?.message ?? json.error?.code ?? "update failed");
+    }
+  }
+
+  async function remove(promo: PromotionDto) {
+    setError(null);
+    const res = await fetch(`/api/v1/studios/${studioId}/promotions/${promo.id}`, { method: "DELETE" });
+    if (res.ok) {
+      setPromos((p) => p.filter((x) => x.id !== promo.id));
+      setConfirmDeleteId(null);
+    } else {
+      const json = await res.json().catch(() => ({}));
+      setError(json.error?.message ?? json.error?.code ?? "delete failed");
     }
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-surface-container border-2 border-outline-variant p-4 grid gap-3 md:grid-cols-4 items-end">
+      {error && (
+        <div className="font-mono text-xs p-3 border-2 border-error text-error" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="bg-surface-container border-2 border-outline-variant p-4 grid gap-3 md:grid-cols-5 items-end">
         <label className="flex flex-col gap-1 font-mono text-xs uppercase tracking-[0.1em] text-outline">
           NAME
           <input aria-label="name" value={name} onChange={(e) => setName(e.target.value)} className="bg-transparent border-b-2 border-outline focus:border-primary-fixed text-on-surface px-1 py-1" />
+        </label>
+        <label className="flex flex-col gap-1 font-mono text-xs uppercase tracking-[0.1em] text-outline">
+          CODE (optional)
+          <input aria-label="code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="auto-apply if blank" className="bg-transparent border-b-2 border-outline focus:border-primary-fixed text-on-surface px-1 py-1 placeholder:text-outline" />
         </label>
         <label className="flex flex-col gap-1 font-mono text-xs uppercase tracking-[0.1em] text-outline">
           TYPE
@@ -57,10 +102,56 @@ export function PromotionsManager({ studioId, initial }: { studioId: string; ini
       </div>
       <ul className="space-y-2">
         {promos.map((p) => (
-          <li key={p.id} className="bg-surface-container-low border-2 border-outline-variant p-3 flex justify-between">
+          <li
+            key={p.id}
+            className={`bg-surface-container-low border-2 border-outline-variant p-3 flex items-center justify-between gap-3 ${p.isActive ? "" : "opacity-50"}`}
+          >
             <span className="text-on-surface">{p.name}</span>
+            {p.code ? (
+              <span className="font-mono text-xs uppercase text-primary-fixed border-2 border-primary-fixed px-2 py-0.5">
+                {p.code}
+              </span>
+            ) : (
+              <span className="font-mono text-[10px] uppercase text-outline">auto</span>
+            )}
             <span className="font-mono text-xs uppercase text-tertiary-fixed-dim">{p.type}</span>
             <span className="text-primary-fixed font-mono">{p.value}</span>
+            <span className="font-mono text-[10px] uppercase text-outline">used {p.usageCount}</span>
+            <span className="flex gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={() => toggleActive(p)}
+                className="border-2 border-outline-variant px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] text-on-surface hover:border-primary-fixed"
+              >
+                {p.isActive ? "PAUSE" : "ACTIVATE"}
+              </button>
+              {confirmDeleteId === p.id ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => remove(p)}
+                    className="border-2 border-error px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] text-error"
+                  >
+                    CONFIRM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="border-2 border-outline-variant px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] text-on-surface hover:border-primary-fixed"
+                  >
+                    CANCEL
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(p.id)}
+                  className="border-2 border-outline-variant px-3 py-1 font-mono uppercase tracking-[0.1em] text-[10px] text-error hover:border-error"
+                >
+                  DELETE
+                </button>
+              )}
+            </span>
           </li>
         ))}
       </ul>

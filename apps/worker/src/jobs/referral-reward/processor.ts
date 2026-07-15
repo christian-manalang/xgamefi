@@ -31,8 +31,28 @@ export async function referralRewardProcessor(
     ? await prisma.order.findUnique({ where: { id: referral.qualifyingOrderId } })
     : null;
 
-  const rewardAmount = new Prisma.Decimal(env.REFERRAL_REWARD_AMOUNT);
-  const rewardCurrency = env.REFERRAL_REWARD_CURRENCY ?? qualifyingOrder?.currency ?? "XLM";
+  const studio = referral.studioId
+    ? await prisma.studio.findUnique({ where: { id: referral.studioId } })
+    : null;
+
+  // Studio override wins over env. null = fall back to env; 0 = explicitly disabled.
+  if (studio && studio.referralRewardAmount !== null && studio.referralRewardAmount.equals(0)) {
+    await prisma.referral.update({
+      where: { id: referralId },
+      data: { status: "REWARDED", rewardAmount: new Prisma.Decimal(0), rewardedAt: new Date() },
+    });
+    return { status: "SKIPPED" };
+  }
+
+  const rewardAmount =
+    studio && studio.referralRewardAmount !== null
+      ? studio.referralRewardAmount
+      : new Prisma.Decimal(env.REFERRAL_REWARD_AMOUNT);
+  const rewardCurrency =
+    (studio && studio.referralRewardCurrency) ||
+    env.REFERRAL_REWARD_CURRENCY ||
+    qualifyingOrder?.currency ||
+    "XLM";
   const asset = assetFor(rewardCurrency);
 
   const { txHash } = await sendPayment({
