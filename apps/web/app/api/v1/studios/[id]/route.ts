@@ -40,7 +40,11 @@ export async function PATCH(req: Request, { params }: Ctx): Promise<Response> {
     }
 
     const cleaned = Object.fromEntries(
-      Object.entries(patch).map(([k, v]) => [k, v === null ? undefined : v])
+      Object.entries(patch).map(([k, v]) => {
+        // For referral reward fields, null means "fall back to env default" — preserve it.
+        if (k === "referralRewardAmount" || k === "referralRewardCurrency") return [k, v];
+        return [k, v === null ? undefined : v];
+      })
     );
 
     const updated = await prisma.studio.update({ where: { id }, data: cleaned });

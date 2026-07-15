@@ -71,4 +71,42 @@ describe("referralRewardProcessor", () => {
     expect(res.status).toBe("SKIPPED");
     expect(sendPayment).not.toHaveBeenCalled();
   });
+
+  it("uses the studio-configured reward over the env default", async () => {
+    await prisma.studio.update({
+      where: { id: studioId },
+      data: { referralRewardAmount: new Prisma.Decimal("2.5"), referralRewardCurrency: "XLM" },
+    });
+    await prisma.referral.update({ where: { id: referralId }, data: { studioId } });
+    const res = await referralRewardProcessor({ data: { referralId } });
+    expect(res.status).toBe("REWARDED");
+    expect(sendPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: "2.5000000", asset: { code: "XLM" } })
+    );
+    const ref = await prisma.referral.findUnique({ where: { id: referralId } });
+    expect(ref?.rewardAmount?.toString()).toBe("2.5");
+    expect(ref?.rewardCurrency).toBe("XLM");
+  });
+
+  it("skips payout when studio has disabled rewards (amount = 0)", async () => {
+    await prisma.studio.update({
+      where: { id: studioId },
+      data: { referralRewardAmount: new Prisma.Decimal("0"), referralRewardCurrency: "XLM" },
+    });
+    await prisma.referral.update({ where: { id: referralId }, data: { studioId } });
+    const res = await referralRewardProcessor({ data: { referralId } });
+    expect(res.status).toBe("SKIPPED");
+    expect(sendPayment).not.toHaveBeenCalled();
+    const ref = await prisma.referral.findUnique({ where: { id: referralId } });
+    expect(ref?.status).toBe("REWARDED");
+    expect(ref?.rewardAmount?.toString()).toBe("0");
+    expect(await prisma.ledgerEntry.count({ where: { referralId } })).toBe(0);
+  });
+
+  it("falls back to env when studio has no override (null)", async () => {
+    await prisma.referral.update({ where: { id: referralId }, data: { studioId } });
+    const res = await referralRewardProcessor({ data: { referralId } });
+    expect(res.status).toBe("REWARDED");
+    expect(sendPayment).toHaveBeenCalledTimes(1);
+  });
 });
