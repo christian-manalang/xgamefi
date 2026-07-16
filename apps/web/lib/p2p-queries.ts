@@ -21,38 +21,41 @@ export async function getMySellableItems(slug: string, playerId: string): Promis
   });
   if (!shop) return [];
 
-  const ownerships = await prisma.itemOwnership.findMany({
-    where: {
-      playerId,
-      studioId: shop.studioId,
-      quantity: { gt: 0 },
-      lockedForListingId: null,
-    },
-    include: { item: true },
-  });
+  // Probe the game API for every studio item, not just mirrored rows, so a
+  // player's first visit bootstraps the ItemOwnership mirror.
+  const [items, locked] = await Promise.all([
+    prisma.item.findMany({ where: { studioId: shop.studioId, isActive: true } }),
+    prisma.itemOwnership.findMany({
+      where: { playerId, studioId: shop.studioId, lockedForListingId: { not: null } },
+      select: { itemId: true },
+    }),
+  ]);
+  const lockedItemIds = new Set(locked.map((l) => l.itemId));
 
-  await Promise.all(
-    ownerships.map((o) => refreshOwnership({ studioId: shop.studioId, playerId, itemId: o.itemId })),
+  const probed = await Promise.all(
+    items
+      .filter((item) => !lockedItemIds.has(item.id))
+      .map(async (item): Promise<SellableItem | null> => {
+        try {
+          const { quantity } = await refreshOwnership({ studioId: shop.studioId, playerId, itemId: item.id });
+          if (quantity < 1) return null;
+          return {
+            itemId: item.id,
+            name: item.name,
+            imageUrl: item.imageUrl,
+            rarity: item.rarity,
+            category: item.category,
+            quantity,
+          };
+        } catch {
+          return null;
+        }
+      }),
   );
 
-  const refreshed = await prisma.itemOwnership.findMany({
-    where: {
-      playerId,
-      studioId: shop.studioId,
-      quantity: { gt: 0 },
-      lockedForListingId: null,
-    },
-    include: { item: true },
-  });
-
-  return refreshed.map((o) => ({
-    itemId: o.itemId,
-    name: o.item.name,
-    imageUrl: o.item.imageUrl,
-    rarity: o.item.rarity,
-    category: o.item.category,
-    quantity: o.quantity,
-  }));
+  return probed
+    .filter((s): s is SellableItem => s !== null)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function createListing(input: {

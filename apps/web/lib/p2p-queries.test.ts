@@ -4,6 +4,7 @@ const {
   assertOwnsItem,
   refreshOwnership,
   findUnique,
+  itemFindMany,
   create,
   upsert,
   p2pListingFindMany,
@@ -16,6 +17,7 @@ const {
   assertOwnsItem: vi.fn(),
   refreshOwnership: vi.fn(),
   findUnique: vi.fn(),
+  itemFindMany: vi.fn(),
   create: vi.fn(),
   upsert: vi.fn(),
   p2pListingFindMany: vi.fn(),
@@ -32,7 +34,7 @@ vi.mock("@xgamefi/db", async () => {
   return {
     ...actual,
     prisma: {
-      item: { findUnique },
+      item: { findUnique, findMany: itemFindMany },
       p2PListing: { create, findMany: p2pListingFindMany, count: p2pListingCount },
       p2PTrade: { findMany: p2pTradeFindMany, count: p2pTradeCount },
       itemOwnership: { upsert, findMany: itemOwnershipFindMany },
@@ -59,16 +61,10 @@ beforeEach(() => {
   p2pTradeFindMany.mockReset().mockResolvedValue([]);
   p2pTradeCount.mockReset().mockResolvedValue(0);
   shopFindFirst.mockReset().mockResolvedValue({ studioId: "s1" });
-  itemOwnershipFindMany.mockReset().mockResolvedValue([
-    {
-      playerId: "p1",
-      itemId: "i1",
-      studioId: "s1",
-      quantity: 3,
-      lockedForListingId: null,
-      item: { id: "i1", name: "Sword Skin", imageUrl: null, rarity: "LEGENDARY", category: "skins" },
-    },
+  itemFindMany.mockReset().mockResolvedValue([
+    { id: "i1", name: "Sword Skin", imageUrl: null, rarity: "LEGENDARY", category: "skins" },
   ]);
+  itemOwnershipFindMany.mockReset().mockResolvedValue([]);
 });
 
 describe("createListing", () => {
@@ -185,7 +181,7 @@ describe("getStudioP2PTrades", () => {
 });
 
 describe("getMySellableItems", () => {
-  it("returns unlocked items after refreshing ownership", async () => {
+  it("returns items the game API says the player owns", async () => {
     const items = await getMySellableItems("gridlock", "p1");
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({ itemId: "i1", name: "Sword Skin", quantity: 3 });
@@ -200,40 +196,26 @@ describe("getMySellableItems", () => {
     shopFindFirst.mockResolvedValue(null);
     const items = await getMySellableItems("missing", "p1");
     expect(items).toEqual([]);
+    expect(itemFindMany).not.toHaveBeenCalled();
     expect(refreshOwnership).not.toHaveBeenCalled();
   });
 
-  it("filters out items that are locked for an existing listing", async () => {
-    itemOwnershipFindMany
-      .mockResolvedValueOnce([
-        {
-          playerId: "p1",
-          itemId: "i1",
-          studioId: "s1",
-          quantity: 3,
-          lockedForListingId: null,
-          item: { id: "i1", name: "Sword Skin", imageUrl: null, rarity: "LEGENDARY", category: "skins" },
-        },
-        {
-          playerId: "p1",
-          itemId: "i2",
-          studioId: "s1",
-          quantity: 1,
-          lockedForListingId: "l1",
-          item: { id: "i2", name: "Locked Core", imageUrl: null, rarity: "EPIC", category: "cores" },
-        },
-      ])
-      .mockResolvedValue([
-        {
-          playerId: "p1",
-          itemId: "i1",
-          studioId: "s1",
-          quantity: 3,
-          lockedForListingId: null,
-          item: { id: "i1", name: "Sword Skin", imageUrl: null, rarity: "LEGENDARY", category: "skins" },
-        },
-      ]);
+  it("excludes items locked for an existing listing without probing the game API", async () => {
+    itemOwnershipFindMany.mockResolvedValue([{ itemId: "i1" }]);
     const items = await getMySellableItems("gridlock", "p1");
-    expect(items.map((i) => i.itemId)).toEqual(["i1"]);
+    expect(items).toEqual([]);
+    expect(refreshOwnership).not.toHaveBeenCalled();
+  });
+
+  it("excludes items the game API reports as unowned", async () => {
+    refreshOwnership.mockResolvedValue({ quantity: 0 });
+    const items = await getMySellableItems("gridlock", "p1");
+    expect(items).toEqual([]);
+  });
+
+  it("skips items whose ownership check fails", async () => {
+    refreshOwnership.mockRejectedValue(new Error("game API returned 404"));
+    const items = await getMySellableItems("gridlock", "p1");
+    expect(items).toEqual([]);
   });
 });
