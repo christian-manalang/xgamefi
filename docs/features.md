@@ -2,6 +2,15 @@
 
 A running log of shipped features. Append one entry per change (newest first).
 
+## Mock-game player inventory endpoints (P2P local testing)
+
+The bundled mock game server now implements the two player-inventory routes the P2P flow calls, so the full list → buy → settle loop can be exercised locally against seeded data.
+
+- **Ownership check:** `GET /api/mock-game/players/:playerId/inventory/:itemId` (`apps/web/app/api/mock-game/players/[playerId]/inventory/[itemId]/route.ts`) — returns `{ quantity: 1 }` for any player/item pair. This is the response shape `refreshOwnership()` (`packages/shared/src/p2p/ownership.ts`) expects, so `assertOwnsItem()` passes when creating a listing and the sell page's per-item refresh succeeds.
+- **Item transfer:** `POST /api/mock-game/players/:playerId/inventory` (`apps/web/app/api/mock-game/players/[playerId]/inventory/route.ts`) — accepts the settlement transfer payload (`{ fromPlayerId, itemId, quantity, tradeId }`) and returns 200. `transferItemAndPayout()` (`packages/shared/src/p2p/settlement.ts`) treats any 2xx as a successful in-game transfer and proceeds to the seller payout; previously the missing route made every local trade fail transfer and auto-refund.
+- The mock keeps no inventory state — the platform's `ItemOwnership` mirror (updated by `refreshOwnership` and settlement) is what the sell page lists.
+- **Tests:** colocated `route.test.ts` for both endpoints.
+
 ## Player-facing promotion coupon codes (#165)
 
 Studios can now attach an optional `code` to a promotion. Code-gated promos only apply when the player types the code at checkout; code-less promos continue to auto-apply as before.
